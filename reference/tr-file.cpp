@@ -1,3 +1,7 @@
+/*
+ Tomb Raider 1 level file
+*/
+
 uint32_t Version; // version (4 bytes)
 
 uint32_t NumTextiles; // number of texture tiles (4 bytes)
