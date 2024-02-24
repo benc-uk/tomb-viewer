@@ -1,0 +1,19 @@
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #5f5f5f;
+  color: #fff;
+}
+
+#console {
+  color: #25c796;
+  background-color: #131313;
+  padding: 1rem;
+  margin: 1rem;
+  height: 25rem;
+  border-radius: 0.5rem;
+  overflow-x: scroll;
+  overflow-y: scroll;
+  font-family: "Cascadia Mono", "Courier New", monospace;
+}
