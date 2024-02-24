@@ -179,19 +179,11 @@ export function parseTR1Level(data: Uint8Array) {
   offset += 8192; // lightmap data skipped!!
 
   // Parse and read the palette
-  const palette = new Array<t.tr_colour>(256);
-  for (let i = 0; i < 256; i++) {
-    palette[i] = {
-      r: levelDat.getUint8(offset),
-      g: levelDat.getUint8(offset + 1),
-      b: levelDat.getUint8(offset + 2),
-    };
-    offset += t.tr_colour_size;
-  }
+  level.palette = t.NewPalette(levelDat, offset);
 
   // Dump the textures as PNGs
   for (let t = 0; t < numTextiles; t++) {
-    saveTextileAsPNG(level.textiles[t], palette);
+    saveTextileAsPNG(level.textiles[t], level.palette);
   }
 }
 

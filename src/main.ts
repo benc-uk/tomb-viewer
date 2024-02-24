@@ -31,8 +31,8 @@ console.error = function (s: any) {
 };
 
 // *** START HERE ***
-//const levelName = "Tomb-Raider-1/01-Caves.PHD";
-const levelName = "Tomb-Raider-1/03-The-Lost-Valley.PHD";
+const levelName = "Tomb-Raider-1/01-Caves.PHD";
+//const levelName = "Tomb-Raider-1/03-The-Lost-Valley.PHD";
 //const levelName = "Tomb-Raider-1/14-Atlantis.PHD";
 //const levelName = "Tomb-Raider-1/08-Cistern.PHD";
 

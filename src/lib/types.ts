@@ -61,6 +61,8 @@ export type tr1_level = {
 
   numTextiles: uint32_t;
   textiles: tr_textile8[];
+
+  palette: tr_palette;
 };
 
 // =============================================================================
@@ -77,8 +79,24 @@ export const tr_colour_size = 3;
 
 export type tr_palette = tr_colour[];
 
-export function NewPalette(): tr_palette {
-  return new Array<tr_colour>(256);
+export const tr_palette_size = 256 * tr_colour_size;
+
+export function NewPalette(data: DataView, offset: number): tr_palette {
+  const palette = new Array<tr_colour>(256);
+
+  for (let i = 0; i < 256; i++) {
+    palette[i] = NewColour(data, offset + i * tr_colour_size);
+  }
+
+  return palette as tr_palette;
+}
+
+export function NewColour(data: DataView, offset: number): tr_colour {
+  return {
+    r: data.getUint8(offset),
+    g: data.getUint8(offset + 1),
+    b: data.getUint8(offset + 2),
+  } as tr_colour;
 }
 
 // =============================================================================
