@@ -56,8 +56,8 @@ export enum tr_version {
 // =============================================================================
 
 export type tr1_level = {
-  version: uint32_t;
-  versionStr: string;
+  // version: uint32_t;
+  // versionStr: string;
 
   numTextiles: uint32_t;
   textiles: tr_textile8[];

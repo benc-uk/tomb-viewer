@@ -1,35 +1,36 @@
 import * as t from "./types";
 import { saveTextileAsPNG } from "./utils";
 
-export function parseTR1Level(data: Uint8Array) {
-  const levelDat = new DataView(data.buffer);
+export function parseLevel(dataArray: Uint8Array) {
+  // Need a DataView to help us read the file
+  const data = new DataView(dataArray.buffer);
 
-  console.log("Parsing level, size: " + data.length);
-  let offset = 0;
-
-  const level = {} as t.tr1_level;
-  level.version = levelDat.getUint32(offset, true);
-  offset += 4;
+  console.log("Parsing level, bytes: " + dataArray.length);
 
   // This will throw an error if the file is recognized as a TR level file
-  level.versionStr = detectVersion(level.version);
+  const versionStr = detectVersion(data.getUint32(0, true));
+  console.log("Detected Tomb Raider version: " + versionStr);
 
-  // log the version as a padded hex string
-  console.log("Detected Tomb Raider version: " + level.versionStr);
+  // Hardcoded to TR1 for now
+  parseTR1Level(data);
+}
 
-  // Parse Textiles
-  const numTextiles = levelDat.getUint32(offset, true);
+export function parseTR1Level(data: DataView) {
+  const level = {} as t.tr1_level;
+
+  // Offset into the file, skip the version in the first 4 bytes
+  let offset = 4;
+
+  // Parse textiles
+  level.numTextiles = data.getUint32(offset, true);
   offset += 4;
 
-  level.numTextiles = numTextiles;
-  console.log("Number of Textiles: " + numTextiles);
+  console.log("Number of tex-tiles: " + level.numTextiles);
 
-  level.textiles = Array<t.tr_textile8>(numTextiles);
+  level.textiles = Array<t.tr_textile8>(level.numTextiles);
 
-  for (let i = 0; i < numTextiles; i++) {
-    const textile = t.NewTextile8(levelDat, offset);
-
-    level.textiles[i] = textile;
+  for (let i = 0; i < level.numTextiles; i++) {
+    level.textiles[i] = t.NewTextile8(data, offset);
     offset += t.tr_textile8_size;
   }
 
@@ -37,152 +38,145 @@ export function parseTR1Level(data: Uint8Array) {
   offset += 4;
 
   // Parse Rooms
-  const numRooms = levelDat.getUint16(offset, true);
+  const numRooms = data.getUint16(offset, true);
   offset += 2;
-  console.log("Number of Rooms: " + numRooms);
+  console.log("Number of rooms: " + numRooms);
   for (let i = 0; i < numRooms; i++) {
     const room = {} as t.tr_room;
     room.info = {
-      x: levelDat.getUint32(offset, true),
-      z: levelDat.getUint32(offset + 4, true),
-      yBottom: levelDat.getUint32(offset + 8, true),
-      yTop: levelDat.getUint32(offset + 12, true),
+      x: data.getUint32(offset, true),
+      z: data.getUint32(offset + 4, true),
+      yBottom: data.getUint32(offset + 8, true),
+      yTop: data.getUint32(offset + 12, true),
     };
     offset += 16;
 
-    room.numDataWords = levelDat.getUint32(offset, true);
+    room.numDataWords = data.getUint32(offset, true);
     offset += 4;
-    offset += 2 * room.numDataWords; // room data skipped!!
+    offset += 2 * room.numDataWords; // Skipped data
 
-    room.numPortals = levelDat.getUint16(offset, true);
+    room.numPortals = data.getUint16(offset, true);
     offset += 2;
-    offset += room.numPortals * 32; // portal data skipped!!
+    offset += room.numPortals * 32; // Skipped data
 
-    room.numZSectors = levelDat.getUint16(offset, true);
+    room.numZSectors = data.getUint16(offset, true);
     offset += 2;
-    room.numXSectors = levelDat.getUint16(offset, true);
+    room.numXSectors = data.getUint16(offset, true);
     offset += 2;
     offset += room.numZSectors * room.numXSectors * 8;
 
-    room.ambientIntensity = levelDat.getUint16(offset, true);
+    room.ambientIntensity = data.getUint16(offset, true);
     offset += 2;
 
-    room.numLights = levelDat.getUint16(offset, true);
+    room.numLights = data.getUint16(offset, true);
     offset += 2;
-    offset += room.numLights * 18; // light data skipped!!
+    offset += room.numLights * 18; // Skipped data
 
-    room.numStaticMeshes = levelDat.getUint16(offset, true);
+    room.numStaticMeshes = data.getUint16(offset, true);
     offset += 2;
-    offset += room.numStaticMeshes * 18; // static mesh data skipped!!
+    offset += room.numStaticMeshes * 18; // Skipped data
 
-    room.alternateRoom = levelDat.getUint16(offset, true);
-    offset += 2; // alternate room
-    room.flags = levelDat.getUint16(offset, true);
-    offset += 2; // flags
+    room.alternateRoom = data.getUint16(offset, true);
+    offset += 2;
+    room.flags = data.getUint16(offset, true);
+    offset += 2;
   }
 
-  const numFloorData = levelDat.getUint32(offset, true);
+  const numFloorData = data.getUint32(offset, true);
   offset += 4;
-  offset += numFloorData * 2; // floor data skipped!!
+  offset += numFloorData * 2; // Skipped data
 
   // Parse mesh data, not this is the only place where a read ahead is needed
   // For numMeshPointers is needed if we wanted to parse the mesh data
-  const numMeshData = levelDat.getUint32(offset, true);
+  const numMeshData = data.getUint32(offset, true);
   offset += 4;
   //const meshDataOffset = offset;
-  offset += numMeshData * 2; // ALL mesh data skipped!!
+  offset += numMeshData * 2; // Skipped data
 
   // Parse mesh pointers
-  const numMeshPointers = levelDat.getUint32(offset, true);
+  const numMeshPointers = data.getUint32(offset, true);
   offset += 4;
-  offset += numMeshPointers * 4; // mesh pointers skipped!!
-  console.log("Number of meshes: " + numMeshPointers);
+  offset += numMeshPointers * 4; // Skipped data
 
   // Would read mesh data here from meshDataOffset, using numMeshPointers count
 
-  const numAnimations = levelDat.getUint32(offset, true);
+  const numAnimations = data.getUint32(offset, true);
   offset += 4;
-  offset += numAnimations * 32; // animation data skipped!!
+  offset += numAnimations * 32; // Skipped data
 
-  const numStateChanges = levelDat.getUint32(offset, true);
+  const numStateChanges = data.getUint32(offset, true);
   offset += 4;
-  offset += numStateChanges * 6; // state changes skipped!!
+  offset += numStateChanges * 6; // Skipped data
 
-  const numAnimDispatches = levelDat.getUint32(offset, true);
+  const numAnimDispatches = data.getUint32(offset, true);
   offset += 4;
-  offset += numAnimDispatches * 8; // anim dispatches skipped!!
+  offset += numAnimDispatches * 8; // Skipped data
 
-  const numAnimCommands = levelDat.getUint32(offset, true);
+  const numAnimCommands = data.getUint32(offset, true);
   offset += 4;
-  offset += numAnimCommands * 2; // anim commands skipped!!
+  offset += numAnimCommands * 2; // Skipped data
 
-  const numMeshTrees = levelDat.getUint32(offset, true);
+  const numMeshTrees = data.getUint32(offset, true);
   offset += 4;
-  offset += numMeshTrees * 4; // mesh trees skipped!!
+  offset += numMeshTrees * 4; // Skipped data
 
-  const numFrames = levelDat.getUint32(offset, true);
+  const numFrames = data.getUint32(offset, true);
   offset += 4;
-  offset += numFrames * 2; // frames skipped!!
+  offset += numFrames * 2; // Skipped data
 
-  const numModels = levelDat.getUint32(offset, true);
+  const numModels = data.getUint32(offset, true);
   offset += 4;
-  offset += numModels * 18; // models skipped!!
+  offset += numModels * 18; // Skipped data
 
-  const numStaticMeshes = levelDat.getUint32(offset, true);
+  const numStaticMeshes = data.getUint32(offset, true);
   offset += 4;
-  offset += numStaticMeshes * 32; // static meshes skipped!!
+  offset += numStaticMeshes * 32; // Skipped data
 
-  const numObjectTextures = levelDat.getUint32(offset, true);
+  const numObjectTextures = data.getUint32(offset, true);
   offset += 4;
-  offset += numObjectTextures * 20; // object textures skipped!!
+  offset += numObjectTextures * 20; // Skipped data
 
-  const numSpriteTextures = levelDat.getUint32(offset, true);
+  const numSpriteTextures = data.getUint32(offset, true);
   offset += 4;
-  offset += numSpriteTextures * 16; // sprite textures skipped!!
+  offset += numSpriteTextures * 16; // Skipped data
 
-  const numSpriteSequences = levelDat.getUint32(offset, true);
+  const numSpriteSequences = data.getUint32(offset, true);
   offset += 4;
-  offset += numSpriteSequences * 8; // sprite sequences skipped!!
+  offset += numSpriteSequences * 8; // Skipped data
 
-  const numCameras = levelDat.getUint32(offset, true);
+  const numCameras = data.getUint32(offset, true);
   offset += 4;
-  offset += numCameras * 16; // cameras skipped!!
+  offset += numCameras * 16; // Skipped data
 
-  const numSoundSources = levelDat.getUint32(offset, true);
+  const numSoundSources = data.getUint32(offset, true);
   offset += 4;
-  offset += numSoundSources * 16; // sound sources skipped!!
+  offset += numSoundSources * 16; // Skipped data
 
-  const numBoxes = levelDat.getUint32(offset, true);
+  const numBoxes = data.getUint32(offset, true);
   offset += 4;
-  offset += numBoxes * 20; // boxes skipped!!
+  offset += numBoxes * 20; // Skipped data
 
-  const numOverlaps = levelDat.getUint32(offset, true);
+  const numOverlaps = data.getUint32(offset, true);
   offset += 4;
-  offset += numOverlaps * 2; // overlaps skipped!!
+  offset += numOverlaps * 2; // Skipped data
 
-  offset += 2 * numBoxes; // GroundZone
-  offset += 2 * numBoxes; // GroundZone2
-  offset += 2 * numBoxes; // FlyZone
-  offset += 2 * numBoxes; // GroundZoneAlt
-  offset += 2 * numBoxes; // GroundZoneAlt2
-  offset += 2 * numBoxes; // FlyZoneAlt
+  offset += 12 * numBoxes; // Skipped zone data
 
-  const numAnimatedTextures = levelDat.getUint32(offset, true);
+  const numAnimatedTextures = data.getUint32(offset, true);
   offset += 4;
-  offset += numAnimatedTextures * 2; // animated textures skipped!!
+  offset += numAnimatedTextures * 2; // Skipped data
 
-  const numEntities = levelDat.getUint32(offset, true);
+  const numEntities = data.getUint32(offset, true);
   offset += 4;
-  offset += numEntities * 22; // entities skipped!!
-  console.log("Number of entities: " + numEntities);
+  offset += numEntities * 22; // Skipped data
 
-  offset += 8192; // lightmap data skipped!!
+  offset += 8192; // Skipped data
 
   // Parse and read the palette
-  level.palette = t.NewPalette(levelDat, offset);
+  level.palette = t.NewPalette(data, offset);
 
-  // Dump the textures as PNGs
-  for (let t = 0; t < numTextiles; t++) {
+  // HACK: Dump the textures as PNGs
+  for (let t = 0; t < level.numTextiles; t++) {
     saveTextileAsPNG(level.textiles[t], level.palette);
   }
 }

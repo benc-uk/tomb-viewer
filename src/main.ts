@@ -40,7 +40,7 @@ const data = await getLevelData(levelName);
 console.log("Loading file: " + levelName);
 
 try {
-  parser.parseTR1Level(data);
+  parser.parseLevel(data);
 } catch (e) {
   console.error("Error parsing level! Going to give up!");
   console.error(e);
