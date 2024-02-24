@@ -32,6 +32,7 @@ export function patchConsole(selector: string = '#console') {
   const logArea = document.querySelector(selector)!
 
   // Monkey patch console.log to write to the log area
+  // eslint-disable-next-line
   console.log = function (...s: any) {
     for (const part of s) {
       logArea.textContent += part + ' '
@@ -41,6 +42,7 @@ export function patchConsole(selector: string = '#console') {
     logArea.scrollTop = logArea.scrollHeight
   }
 
+  // eslint-disable-next-line
   console.error = function (s: any) {
     logArea.textContent += '💥 ' + s + '\n'
     logArea.scrollTop = logArea.scrollHeight
