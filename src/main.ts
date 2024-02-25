@@ -44,7 +44,6 @@ document.querySelector('#levelSelect')!.addEventListener('change', async (e) => 
 
     let totalVertices = 0
     for (const room of level.rooms) {
-      // count vertices
       totalVertices += room.roomData.numVertices
     }
 
