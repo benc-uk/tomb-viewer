@@ -12,6 +12,10 @@ on:
     paths:
       - 'src/**'
 
+permissions:
+  packages: read
+  contents: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest
