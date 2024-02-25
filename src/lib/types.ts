@@ -16,7 +16,7 @@ export type tr_vertex = {
   z: int16_t
 }
 
-export function NewVertex(data: DataView, offset: number) {
+export function ParseVertex(data: DataView, offset: number) {
   return {
     x: data.getInt16(offset, true),
     y: data.getInt16(offset + 2, true),
@@ -33,7 +33,7 @@ export type tr_face3 = {
 
 export const tr_face3_size = 3 * 2 + 2
 
-export function NewFace3(data: DataView, offset: number): tr_face3 {
+export function ParseFace3(data: DataView, offset: number): tr_face3 {
   return {
     vertices: [
       data.getUint16(offset, true),
@@ -51,7 +51,7 @@ export type tr_face4 = {
 
 export const tr_face4_size = 4 * 2 + 2
 
-export function NewFace4(data: DataView, offset: number): tr_face4 {
+export function ParseFace4(data: DataView, offset: number): tr_face4 {
   return {
     vertices: [
       data.getUint16(offset, true),
@@ -105,17 +105,17 @@ export type tr_palette = tr_colour[]
 
 export const tr_palette_size = 256 * tr_colour_size
 
-export function NewPalette(data: DataView, offset: number): tr_palette {
+export function ParsePalette(data: DataView, offset: number): tr_palette {
   const palette = new Array<tr_colour>(256)
 
   for (let i = 0; i < 256; i++) {
-    palette[i] = NewColour(data, offset + i * tr_colour_size)
+    palette[i] = ParseColour(data, offset + i * tr_colour_size)
   }
 
   return palette as tr_palette
 }
 
-export function NewColour(data: DataView, offset: number): tr_colour {
+export function ParseColour(data: DataView, offset: number): tr_colour {
   return {
     r: data.getUint8(offset),
     g: data.getUint8(offset + 1),
@@ -129,7 +129,7 @@ export function NewColour(data: DataView, offset: number): tr_colour {
 
 export type tr_textile8 = Uint8Array
 
-export function NewTextile8(data: DataView, offset: number): tr_textile8 {
+export function ParseTextile8(data: DataView, offset: number): tr_textile8 {
   const textile = new Uint8Array(tr_textile8_size)
 
   for (let j = 0; j < tr_textile8_size; j++) {
@@ -144,13 +144,6 @@ export const tr_textile8_size = 256 * 256
 // =============================================================================
 // Rooms
 // =============================================================================
-
-export type tr_room_info = {
-  x: int32_t
-  z: int32_t
-  yBottom: int32_t
-  yTop: int32_t
-}
 
 export type tr_room = {
   info: tr_room_info
@@ -167,6 +160,24 @@ export type tr_room = {
   flags: uint16_t
 }
 
+export type tr_room_info = {
+  x: int32_t
+  z: int32_t
+  yBottom: int32_t
+  yTop: int32_t
+}
+
+export const tr_room_info_size = 4 * 4
+
+export function ParseRoomInfo(data: DataView, offset: number): tr_room_info {
+  return {
+    x: data.getInt32(offset, true),
+    z: data.getInt32(offset + 4, true),
+    yBottom: data.getInt32(offset + 8, true),
+    yTop: data.getInt32(offset + 12, true),
+  } as tr_room_info
+}
+
 export type tr_room_data = {
   numVertices: uint16_t
   vertices: tr_room_vertex[]
@@ -181,7 +192,7 @@ export type tr_room_data = {
   sprites: tr_room_sprite[]
 }
 
-export function NewEmptyRoomData(): tr_room_data {
+export function NewRoomData(): tr_room_data {
   const roomData = {} as tr_room_data
   roomData.vertices = new Array<tr_room_vertex>()
   roomData.rectangles = new Array<tr_face4>()
@@ -198,9 +209,9 @@ export type tr_room_vertex = {
 
 export const tr_room_vertex_size = tr_vertex_size + 2
 
-export function NewRoomVertex(data: DataView, offset: number): tr_room_vertex {
+export function ParseRoomVertex(data: DataView, offset: number): tr_room_vertex {
   return {
-    vertex: NewVertex(data, offset),
+    vertex: ParseVertex(data, offset),
     lighting: data.getInt16(offset + 6, true),
   } as tr_room_vertex
 }
@@ -212,7 +223,7 @@ export type tr_room_sprite = {
 
 export const tr_room_sprite_size = 4
 
-export function NewRoomSprite(data: DataView, offset: number): tr_room_sprite {
+export function ParseRoomSprite(data: DataView, offset: number): tr_room_sprite {
   return {
     vertex: data.getInt16(offset, true),
     texture: data.getInt16(offset + 2, true),

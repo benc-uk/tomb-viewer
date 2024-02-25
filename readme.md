@@ -2,6 +2,12 @@ This is an attempt to develop a WebGL based viewer and renderer for classic Tomb
 
 To say it's work in progress would be putting it very mildly
 
+# Try It
+
+The app is deployed to GitHub pages:
+
+### [code.benco.io/tomb-viewer/](http://code.benco.io/tomb-viewer/)
+
 # Status
 
 [![Build](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml)
