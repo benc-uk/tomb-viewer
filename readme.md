@@ -2,6 +2,12 @@ This is an attempt to develop a WebGL based viewer and renderer for classic Tomb
 
 To say it's work in progress would be putting it very mildly
 
+# Status
+
+[![Build](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml)
+
+[![CI](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml)
+
 # References
 
 Would simply been impossible without the 'TRosettaStone 3' (aka TRS or TRS3)
