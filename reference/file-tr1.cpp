@@ -62,8 +62,11 @@ tr_sound_source SoundSources[NumSoundSources]; // sound source data (NumSoundSou
 
 uint32_t NumBoxes; // number of box data records to follow (4 bytes)
 tr_box Boxes[NumBoxes]; // box data (NumBoxes * 20 bytes [TR1 version])
+
 uint32_t NumOverlaps; // number of overlap records to follow (4 bytes)
 uint16_t Overlaps[NumOverlaps]; // overlap data (NumOverlaps * 2 bytes)
+
+// !NOTE! this is incorrect, 2*NumBoxes is actually 1*NumBoxes
 uint16_t GroundZone[2*NumBoxes]; // ground zone data
 uint16_t GroundZone2[2*NumBoxes]; // ground zone 2 data
 uint16_t FlyZone[2*NumBoxes]; // fly zone data

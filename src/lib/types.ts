@@ -21,24 +21,47 @@ export function NewVertex(data: DataView, offset: number) {
     x: data.getInt16(offset, true),
     y: data.getInt16(offset + 2, true),
     z: data.getInt16(offset + 4, true),
-  }
+  } as tr_vertex
 }
 
 export const tr_vertex_size = 6
 
 export type tr_face3 = {
-  vertices: tr_vertex[] // 3
+  vertices: uint16_t[] // 3
   texture: uint16_t
 }
 
-export const tr_face3_size = 3 * tr_vertex_size + 2
+export const tr_face3_size = 3 * 2 + 2
+
+export function NewFace3(data: DataView, offset: number): tr_face3 {
+  return {
+    vertices: [
+      data.getUint16(offset, true),
+      data.getUint16(offset + tr_vertex_size, true),
+      data.getUint16(offset + 2 * tr_vertex_size, true),
+    ],
+    texture: data.getUint16(offset + 3 * tr_vertex_size, true),
+  } as tr_face3
+}
 
 export type tr_face4 = {
-  vertices: tr_vertex[] // 4
+  vertices: uint16_t[] // 4
   texture: uint16_t
 }
 
-export const tr_face4_size = 4 * tr_vertex_size + 2
+export const tr_face4_size = 4 * 2 + 2
+
+export function NewFace4(data: DataView, offset: number): tr_face4 {
+  return {
+    vertices: [
+      data.getUint16(offset, true),
+      data.getUint16(offset + tr_vertex_size, true),
+      data.getUint16(offset + 2 * tr_vertex_size, true),
+      data.getUint16(offset + 3 * tr_vertex_size, true),
+    ],
+    texture: data.getUint16(offset + 4 * tr_vertex_size, true),
+  } as tr_face4
+}
 
 export enum tr_version {
   TR1 = 0x00000020,
@@ -59,6 +82,9 @@ export type tr1_level = {
 
   numTextiles: uint32_t
   textiles: tr_textile8[]
+
+  numRooms: uint16_t
+  rooms: tr_room[]
 
   palette: tr_palette
 }
@@ -128,8 +154,8 @@ export type tr_room_info = {
 
 export type tr_room = {
   info: tr_room_info
-  numDataWords: uint32_t
-  data: uint16_t[]
+  numDataWords: uint32_t // Size of tr_room_data
+  roomData: tr_room_data
 
   numPortals: uint16_t
   numZSectors: uint16_t
@@ -139,6 +165,58 @@ export type tr_room = {
   numStaticMeshes: uint16_t
   alternateRoom: uint16_t
   flags: uint16_t
+}
+
+export type tr_room_data = {
+  numVertices: uint16_t
+  vertices: tr_room_vertex[]
+
+  numRectangles: uint16_t
+  rectangles: tr_face4[]
+
+  numTriangles: uint16_t
+  triangles: tr_face3[]
+
+  numSprites: uint16_t
+  sprites: tr_room_sprite[]
+}
+
+export function NewEmptyRoomData(): tr_room_data {
+  const roomData = {} as tr_room_data
+  roomData.vertices = new Array<tr_room_vertex>()
+  roomData.rectangles = new Array<tr_face4>()
+  roomData.triangles = new Array<tr_face3>()
+  roomData.sprites = new Array<tr_room_sprite>()
+
+  return roomData
+}
+
+export type tr_room_vertex = {
+  vertex: tr_vertex
+  lighting: int16_t
+}
+
+export const tr_room_vertex_size = tr_vertex_size + 2
+
+export function NewRoomVertex(data: DataView, offset: number): tr_room_vertex {
+  return {
+    vertex: NewVertex(data, offset),
+    lighting: data.getInt16(offset + 6, true),
+  } as tr_room_vertex
+}
+
+export type tr_room_sprite = {
+  vertex: int16_t
+  texture: int16_t
+}
+
+export const tr_room_sprite_size = 4
+
+export function NewRoomSprite(data: DataView, offset: number): tr_room_sprite {
+  return {
+    vertex: data.getInt16(offset, true),
+    texture: data.getInt16(offset + 2, true),
+  } as tr_room_sprite
 }
 
 // =============================================================================
