@@ -1,5 +1,4 @@
 import * as t from './types'
-import { saveTextileAsPNG } from './utils'
 
 /**
  * Parses a Tomb Raider level file

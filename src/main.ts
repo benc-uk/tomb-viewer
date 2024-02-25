@@ -4,7 +4,7 @@ import { parseLevel } from './lib/parser'
 import { getLevelData } from './lib/file'
 import { textile8ToBuffer } from './lib/textures'
 
-import { Context, Material, TextureCache } from '@benc-uk/gsots3d'
+import { Context, Instance, Material, TextureCache } from '@benc-uk/gsots3d'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <main>
@@ -52,7 +52,7 @@ document.querySelector('#levelSelect')!.addEventListener('change', async (e) => 
     ctx.removeAllInstances()
     TextureCache.clear()
 
-    const cubes = new Array()
+    const cubes = new Array<Instance>()
 
     console.log('Loaded level: ' + levelName)
 
