@@ -4,6 +4,7 @@ body {
   box-sizing: border-box;
   background-color: #525252;
   color: #fff;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 main {
@@ -28,4 +29,25 @@ select {
   background-color: #131313;
   color: #fff;
   border: 1px solid #25c796;
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #25c796;
+  border-radius: 0.5rem;
+  background-color: black;
+  width: 100%;
+  margin: 1rem 0rem;
+}
+
+.flexrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2rem;
+  margin: 0;
 }

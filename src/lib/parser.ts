@@ -56,50 +56,47 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += t.tr_room_info_size
 
     // This confusingly named variable is actually the size of just the tr_room_data
+    // Which has no purpose unless we want skip the tr_room_data
     room.numDataWords = data.getUint32(offset, true)
     offset += 4
 
-    // Parse tr_room_data separately for now, with it's own offset
-    let roomOffset = offset
     room.roomData = t.NewRoomData()
 
     // Parse tr_room_data.vertices
-    room.roomData.numVertices = data.getUint16(roomOffset, true)
-    roomOffset += 2
+    room.roomData.numVertices = data.getUint16(offset, true)
+    offset += 2
     for (let j = 0; j < room.roomData.numVertices; j++) {
-      const room_vertex = t.ParseRoomVertex(data, roomOffset)
+      const room_vertex = t.ParseRoomVertex(data, offset)
       room.roomData.vertices.push(room_vertex)
-      roomOffset += t.tr_room_vertex_size
+      offset += t.tr_room_vertex_size
     }
 
     // Parse tr_room_data.rectangles
-    room.roomData.numRectangles = data.getUint16(roomOffset, true)
-    roomOffset += 2
+    room.roomData.numRectangles = data.getUint16(offset, true)
+    offset += 2
     for (let j = 0; j < room.roomData.numRectangles; j++) {
-      const face4 = t.ParseFace4(data, roomOffset)
+      const face4 = t.ParseFace4(data, offset)
       room.roomData.rectangles.push(face4)
-      roomOffset += t.tr_face4_size
+      offset += t.tr_face4_size
     }
 
     // Parse tr_room_data.triangles
-    room.roomData.numTriangles = data.getUint16(roomOffset, true)
-    roomOffset += 2
+    room.roomData.numTriangles = data.getUint16(offset, true)
+    offset += 2
     for (let j = 0; j < room.roomData.numTriangles; j++) {
-      const face3 = t.ParseFace3(data, roomOffset)
+      const face3 = t.ParseFace3(data, offset)
       room.roomData.triangles.push(face3)
-      roomOffset += t.tr_face3_size
+      offset += t.tr_face3_size
     }
 
     // Parse tr_room_data.sprites
-    room.roomData.numSprites = data.getUint16(roomOffset, true)
-    roomOffset += 2
+    room.roomData.numSprites = data.getUint16(offset, true)
+    offset += 2
     for (let j = 0; j < room.roomData.numSprites; j++) {
-      const room_sprite = t.ParseRoomSprite(data, roomOffset)
+      const room_sprite = t.ParseRoomSprite(data, offset)
       room.roomData.sprites.push(room_sprite)
-      roomOffset += t.tr_room_sprite_size
+      offset += t.tr_room_sprite_size
     }
-
-    offset += 2 * room.numDataWords // Jump completely over the tr_room_data
 
     room.numPortals = data.getUint16(offset, true)
     offset += 2
@@ -222,11 +219,6 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   // Parse and read the palette
   level.palette = t.ParsePalette(data, offset)
-
-  // HACK: Dump the textures as PNGs
-  for (let t = 0; t < level.numTextiles; t++) {
-    saveTextileAsPNG(level.textiles[t], level.palette)
-  }
 
   return level
 }

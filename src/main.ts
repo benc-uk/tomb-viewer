@@ -2,10 +2,15 @@ import './style.css'
 
 import { parseLevel } from './lib/parser'
 import { getLevelData } from './lib/file'
-import { patchConsole } from './lib/utils'
+import { textile8ToBuffer } from './lib/textures'
+
+import { Context, Material, TextureCache } from '@benc-uk/gsots3d'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <main>
+ 
+  <div class="flexrow">
+  <span class="title">Tomb Raider - Level Viewer</span>
   <select id="levelSelect">
     <option value="Tomb-Raider-1/01-Caves.PHD">01 Caves</option>
     <option value="Tomb-Raider-1/02-City-of-Vilcabamba.PHD">02 City of Vilcabamba</option>
@@ -23,17 +28,19 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <option value="Tomb-Raider-1/14-Atlantis.PHD">14 Atlantis</option>
     <option value="Tomb-Raider-1/15-The-Great-Pyramid.PHD">15 The Great Pyramid</option>
   </select>
+  </div>
 
-  <pre id="console"></pre>
+  <canvas id="canvas" width="800" height="600"></canvas>
   <div id="textures"></div>
 </main>
 `
 
-patchConsole('#console')
+const ctx = await Context.init()
+ctx.globalLight.setAsPosition(50, 10, 300)
+ctx.start()
 
 document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
   document.querySelector('#textures')!.innerHTML = ''
-  document.querySelector('#console')!.innerHTML = ''
 
   const levelName = (e.target as HTMLSelectElement).value
   const data = await getLevelData(levelName)
@@ -42,19 +49,35 @@ document.querySelector('#levelSelect')!.addEventListener('change', async (e) => 
   try {
     const level = parseLevel(data)
 
-    let totalVertices = 0
-    for (const room of level.rooms) {
-      totalVertices += room.roomData.numVertices
+    ctx.removeAllInstances()
+    TextureCache.clear()
+
+    const cubes = new Array()
+
+    console.log('Loaded level: ' + levelName)
+
+    for (let i = 0; i < level.numTextiles; i++) {
+      const t = level.textiles[i]
+      const tb = textile8ToBuffer(t, level.palette)
+      const m = Material.createBasicTexture(tb, true, false)
+      const cube = ctx.createCubeInstance(m, 5)
+
+      const x = (i % 4) * 7.5 - 11
+      const y = 3 - Math.floor(i / 4) * 6 + 5
+      cube.setPosition(x, y, 0)
+      cubes.push(cube)
     }
 
-    console.log(`Level parsed successfully!
-    • texTitles: ${level.textiles.length}
-    • rooms: ${level.rooms.length}
-    • totalVertices: ${totalVertices}`)
+    ctx.update = (delta: number) => {
+      for (const cube of cubes) {
+        cube.rotateY(0.9 * delta)
+      }
+    }
   } catch (e) {
     console.error('Error parsing level! Going to give up!')
     console.error(e)
   }
 })
 
+// Trigger the level select to load the first level
 document.querySelector('#levelSelect')!.dispatchEvent(new Event('change'))

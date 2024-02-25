@@ -17,5 +17,8 @@
     "typescript": "^5.2.2",
     "typescript-eslint": "^7.0.2",
     "vite": "^5.1.4"
+  },
+  "dependencies": {
+    "@benc-uk/gsots3d": "file:../gsots3d"
   }
 }
