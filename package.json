@@ -19,6 +19,6 @@
     "vite": "^5.1.4"
   },
   "dependencies": {
-    "@benc-uk/gsots3d": "0.0.5-alpha.6"
+    "gsots3d": "0.0.5-alpha.6"
   }
 }
