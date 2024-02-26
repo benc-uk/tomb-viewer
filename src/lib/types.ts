@@ -19,15 +19,15 @@ export type tr_vertex = {
 export function ParseVertex(data: DataView, offset: number) {
   return {
     x: data.getInt16(offset, true),
-    y: data.getInt16(offset + 2, true),
-    z: data.getInt16(offset + 4, true),
+    y: -data.getInt16(offset + 2, true),
+    z: -data.getInt16(offset + 4, true),
   } as tr_vertex
 }
 
 export const tr_vertex_size = 6
 
 export type tr_face3 = {
-  vertices: uint16_t[] // 3
+  vertices: uint16_t[] // LEN:3, these are indexes into the vertex data, not actual vertices
   texture: uint16_t
 }
 
@@ -35,17 +35,13 @@ export const tr_face3_size = 3 * 2 + 2
 
 export function ParseFace3(data: DataView, offset: number): tr_face3 {
   return {
-    vertices: [
-      data.getUint16(offset, true),
-      data.getUint16(offset + tr_vertex_size, true),
-      data.getUint16(offset + 2 * tr_vertex_size, true),
-    ],
-    texture: data.getUint16(offset + 3 * tr_vertex_size, true),
+    vertices: [data.getUint16(offset, true), data.getUint16(offset + 2, true), data.getUint16(offset + 4, true)],
+    texture: data.getUint16(offset + 6, true),
   } as tr_face3
 }
 
 export type tr_face4 = {
-  vertices: uint16_t[] // 4
+  vertices: uint16_t[] // LEN:4, these are indexes into the vertex data, not actual vertices
   texture: uint16_t
 }
 
@@ -55,11 +51,11 @@ export function ParseFace4(data: DataView, offset: number): tr_face4 {
   return {
     vertices: [
       data.getUint16(offset, true),
-      data.getUint16(offset + tr_vertex_size, true),
-      data.getUint16(offset + 2 * tr_vertex_size, true),
-      data.getUint16(offset + 3 * tr_vertex_size, true),
+      data.getUint16(offset + 2, true),
+      data.getUint16(offset + 4, true),
+      data.getUint16(offset + 6, true),
     ],
-    texture: data.getUint16(offset + 4 * tr_vertex_size, true),
+    texture: data.getUint16(offset + 8, true),
   } as tr_face4
 }
 

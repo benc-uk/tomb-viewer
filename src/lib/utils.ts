@@ -1,4 +1,4 @@
-import { tr_palette, tr_textile8, tr_textile8_size } from './types'
+import { tr_palette, tr_room_vertex, tr_textile8, tr_textile8_size, tr_vertex } from './types'
 
 /**
  * Saves a textile as a PNG image, and appends it to the #textures div
@@ -56,4 +56,8 @@ export function patchConsole(selector: string = '#console') {
     logArea.textContent += '💥 ' + s + '\n'
     logArea.scrollTop = logArea.scrollHeight
   }
+}
+
+export function vertToString(vert: tr_vertex) {
+  return `${vert.x}, ${vert.y}, ${vert.z}`
 }
