@@ -14,6 +14,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  packages: read
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -40,10 +41,12 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          token: ${{ secrets.GH_PACKAGE_READ_PAT }}
+          token: ${{ github.token }}
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Run build
         run: |
