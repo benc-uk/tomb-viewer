@@ -4,7 +4,7 @@ import { parseLevel } from './lib/parser'
 import { getLevelData } from './lib/file'
 import { textile8ToBuffer } from './lib/textures'
 
-import { Context, Instance, Material, TextureCache } from '@benc-uk/gsots3d'
+import { Context, Instance, Material, TextureCache } from 'gsots3d'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <main>
