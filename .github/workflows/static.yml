@@ -40,11 +40,10 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          token: ${{ secrets.GH_PACKAGE_READ_PAT }}
 
       - name: Install dependencies
         run: npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGE_READ_PAT }}
 
       - name: Run build
         run: |
