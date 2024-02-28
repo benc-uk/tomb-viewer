@@ -2,7 +2,6 @@ import { Context, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { textile8ToBuffer } from './lib/textures'
-import { saveTextileAsPNG } from './lib/utils'
 
 export async function renderLevel(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -18,84 +17,82 @@ export async function renderLevel(ctx: Context, levelName: string) {
     console.log('Loaded level: ' + levelName)
 
     const materials = new Array<Material>()
-    for (let i = 0; i < level.numTextiles; i++) {
-      const t = level.textiles[i]
-      const buffer = textile8ToBuffer(t, level.palette)
+    for (const textile of level.textiles) {
+      const buffer = textile8ToBuffer(textile, level.palette)
       materials.push(Material.createBasicTexture(buffer, true, false))
-      saveTextileAsPNG(t, level.palette)
     }
 
-    const m = Material.createSolidColour(0.25, 0.22, 0.21)
+    const mat = materials[1]
 
     // Build all rooms
     let roomNum = 0
-    for (let room of level.rooms) {
+    for (const room of level.rooms) {
       const builder = new RenderableBuilder()
-      const offsetX = room.info.x
-      const offsetZ = room.info.z
 
-      for (let rect of room.roomData.rectangles) {
+      for (const rect of room.roomData.rectangles) {
         const vert1i = rect.vertices[0]
         const vert2i = rect.vertices[1]
         const vert3i = rect.vertices[2]
         const vert4i = rect.vertices[3]
 
         const v1 = [
-          room.roomData.vertices[vert1i].vertex.x + offsetX,
+          room.roomData.vertices[vert1i].vertex.x,
           room.roomData.vertices[vert1i].vertex.y,
-          room.roomData.vertices[vert1i].vertex.z - offsetZ,
+          room.roomData.vertices[vert1i].vertex.z,
         ] as XYZ
         const v2 = [
-          room.roomData.vertices[vert2i].vertex.x + offsetX,
+          room.roomData.vertices[vert2i].vertex.x,
           room.roomData.vertices[vert2i].vertex.y,
-          room.roomData.vertices[vert2i].vertex.z - offsetZ,
+          room.roomData.vertices[vert2i].vertex.z,
         ] as XYZ
         const v3 = [
-          room.roomData.vertices[vert3i].vertex.x + offsetX,
+          room.roomData.vertices[vert3i].vertex.x,
           room.roomData.vertices[vert3i].vertex.y,
-          room.roomData.vertices[vert3i].vertex.z - offsetZ,
+          room.roomData.vertices[vert3i].vertex.z,
         ] as XYZ
         const v4 = [
-          room.roomData.vertices[vert4i].vertex.x + offsetX,
+          room.roomData.vertices[vert4i].vertex.x,
           room.roomData.vertices[vert4i].vertex.y,
-          room.roomData.vertices[vert4i].vertex.z - offsetZ,
+          room.roomData.vertices[vert4i].vertex.z,
         ] as XYZ
 
-        // reverse winding order
-        builder.addQuad(v1, v4, v3, v2)
+        // Reverse winding order
+        builder.addQuad(v1, v4, v3, v2, [0, 0], [1 / 4, 0], [1 / 4, 1 / 4], [0, 1 / 4])
       }
 
-      for (let tri of room.roomData.triangles) {
+      for (const tri of room.roomData.triangles) {
         const vert1i = tri.vertices[0]
         const vert2i = tri.vertices[1]
         const vert3i = tri.vertices[2]
 
         const v1 = [
-          room.roomData.vertices[vert1i].vertex.x + offsetX,
+          room.roomData.vertices[vert1i].vertex.x,
           room.roomData.vertices[vert1i].vertex.y,
-          room.roomData.vertices[vert1i].vertex.z - offsetZ,
+          room.roomData.vertices[vert1i].vertex.z,
         ] as XYZ
         const v2 = [
-          room.roomData.vertices[vert2i].vertex.x + offsetX,
+          room.roomData.vertices[vert2i].vertex.x,
           room.roomData.vertices[vert2i].vertex.y,
-          room.roomData.vertices[vert2i].vertex.z - offsetZ,
+          room.roomData.vertices[vert2i].vertex.z,
         ] as XYZ
         const v3 = [
-          room.roomData.vertices[vert3i].vertex.x + offsetX,
+          room.roomData.vertices[vert3i].vertex.x,
           room.roomData.vertices[vert3i].vertex.y,
-          room.roomData.vertices[vert3i].vertex.z - offsetZ,
+          room.roomData.vertices[vert3i].vertex.z,
         ] as XYZ
 
-        // reverse winding order
+        // Reverse winding order
         builder.addTriangle(v1, v3, v2)
       }
 
       try {
-        console.log('Creating room: ' + roomNum)
+        // Build the room geometry and add to the world
+        const roomInstance = ctx.createCustomInstance(builder, mat)
 
-        ctx.createCustomInstance(builder, m)
+        // Offset the room to its position
+        roomInstance.position = [room.info.x, 0, -room.info.z]
       } catch (e) {
-        console.error('Error creating room!')
+        console.error('Error creating room:', roomNum)
         console.error(e)
       }
 

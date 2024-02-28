@@ -1,4 +1,4 @@
-import { tr_palette, tr_room_vertex, tr_textile8, tr_textile8_size, tr_vertex } from './types'
+import { tr_palette, tr_textile8, tr_textile8_size, tr_vertex } from './types'
 
 /**
  * Saves a textile as a PNG image, and appends it to the #textures div

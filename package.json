@@ -21,6 +21,6 @@
     "vite": "^5.1.4"
   },
   "dependencies": {
-    "gsots3d": "../gsots3d"
+    "gsots3d": "0.0.5-alpha.7"
   }
 }
