@@ -36,15 +36,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 const ctx = await Context.init()
 ctx.start()
-ctx.camera.enableFPControls(0, -0.2, 0.002, 25)
-ctx.camera.far = 80000
-ctx.camera.position = [800, 400, 4060]
-ctx.globalLight.setAsPosition(1000, 1000, 0)
+ctx.camera.enableFPControls(0, -0.2, 0.002, 90)
+ctx.camera.far = 22000
+ctx.globalLight.setAsPosition(0, 10000, 0)
 
-// HACK: Temporary
-ctx.disableCulling = true
-
-const l = ctx.createPointLight([0, 0, 0], [1, 1, 1], 100)
+const l = ctx.createPointLight([0, 0, 0], [1, 1, 1], 7000)
 ctx.update = () => {
   l.position = ctx.camera.position
 }

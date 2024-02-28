@@ -1,4 +1,4 @@
-import { Context, Material, TextureCache } from 'gsots3d'
+import { Context, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { textile8ToBuffer } from './lib/textures'
@@ -25,60 +25,84 @@ export async function renderLevel(ctx: Context, levelName: string) {
       saveTextileAsPNG(t, level.palette)
     }
 
-    let objFile = ``
+    const m = Material.createSolidColour(0.25, 0.22, 0.21)
 
-    // Get room 0
-    const room = level.rooms[0]
+    // Build all rooms
+    let roomNum = 0
+    for (let room of level.rooms) {
+      const builder = new RenderableBuilder()
+      const offsetX = room.info.x
+      const offsetZ = room.info.z
 
-    for (let vert of room.roomData.vertices) {
-      objFile += `v ${vert.vertex.x} ${vert.vertex.y} ${vert.vertex.z}\n`
+      for (let rect of room.roomData.rectangles) {
+        const vert1i = rect.vertices[0]
+        const vert2i = rect.vertices[1]
+        const vert3i = rect.vertices[2]
+        const vert4i = rect.vertices[3]
+
+        const v1 = [
+          room.roomData.vertices[vert1i].vertex.x + offsetX,
+          room.roomData.vertices[vert1i].vertex.y,
+          room.roomData.vertices[vert1i].vertex.z - offsetZ,
+        ] as XYZ
+        const v2 = [
+          room.roomData.vertices[vert2i].vertex.x + offsetX,
+          room.roomData.vertices[vert2i].vertex.y,
+          room.roomData.vertices[vert2i].vertex.z - offsetZ,
+        ] as XYZ
+        const v3 = [
+          room.roomData.vertices[vert3i].vertex.x + offsetX,
+          room.roomData.vertices[vert3i].vertex.y,
+          room.roomData.vertices[vert3i].vertex.z - offsetZ,
+        ] as XYZ
+        const v4 = [
+          room.roomData.vertices[vert4i].vertex.x + offsetX,
+          room.roomData.vertices[vert4i].vertex.y,
+          room.roomData.vertices[vert4i].vertex.z - offsetZ,
+        ] as XYZ
+
+        // reverse winding order
+        builder.addQuad(v1, v4, v3, v2)
+      }
+
+      for (let tri of room.roomData.triangles) {
+        const vert1i = tri.vertices[0]
+        const vert2i = tri.vertices[1]
+        const vert3i = tri.vertices[2]
+
+        const v1 = [
+          room.roomData.vertices[vert1i].vertex.x + offsetX,
+          room.roomData.vertices[vert1i].vertex.y,
+          room.roomData.vertices[vert1i].vertex.z - offsetZ,
+        ] as XYZ
+        const v2 = [
+          room.roomData.vertices[vert2i].vertex.x + offsetX,
+          room.roomData.vertices[vert2i].vertex.y,
+          room.roomData.vertices[vert2i].vertex.z - offsetZ,
+        ] as XYZ
+        const v3 = [
+          room.roomData.vertices[vert3i].vertex.x + offsetX,
+          room.roomData.vertices[vert3i].vertex.y,
+          room.roomData.vertices[vert3i].vertex.z - offsetZ,
+        ] as XYZ
+
+        // reverse winding order
+        builder.addTriangle(v1, v3, v2)
+      }
+
+      try {
+        console.log('Creating room: ' + roomNum)
+
+        ctx.createCustomInstance(builder, m)
+      } catch (e) {
+        console.error('Error creating room!')
+        console.error(e)
+      }
+
+      roomNum++
     }
 
-    objFile += `vn 0 0 -1\ng room\n`
-
-    let count = 0
-    for (let rect of room.roomData.rectangles) {
-      const vert1i = rect.vertices[0]
-      const vert2i = rect.vertices[1]
-      const vert3i = rect.vertices[2]
-      const vert4i = rect.vertices[3]
-
-      // calculate normal
-      const v1 = room.roomData.vertices[vert1i].vertex
-      const v2 = room.roomData.vertices[vert2i].vertex
-      const v3 = room.roomData.vertices[vert3i].vertex
-
-      const n = [
-        (v2.z - v1.z) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.z - v1.z),
-        (v2.x - v1.x) * (v3.z - v1.z) - (v2.z - v1.z) * (v3.x - v1.x),
-        (v2.y - v1.y) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.y - v1.y),
-      ]
-
-      // Normalize
-      const len = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2])
-      n[0] /= len
-      n[1] /= len
-      n[2] /= len
-
-      objFile += `vn ${n[1]} ${n[0]} ${n[2]}\n`
-
-      // Rects need two triangles
-      objFile += `f ${vert1i + 1}//${count} ${vert2i + 1}//${count} ${vert3i + 1}//${count}\n`
-      objFile += `f ${vert3i + 1}//${count} ${vert4i + 1}//${count} ${vert1i + 1}//${count}\n`
-      count++
-    }
-
-    //console.log(objFile)
-
-    try {
-      await ctx.loadModel('./hack', 'level.obj')
-    } catch (e) {
-      console.error(e)
-    }
-    const model = ctx.createModelInstance('level')
-    model.scale = [0.5, 0.5, 0.5]
-    model.material = materials[0] //Material.createSolidColour(0.8, 0.3, 0.1)
-    model.material.unshaded = true
+    ctx.camera.position = [level.rooms[0].info.x, 0, -level.rooms[0].info.z]
   } catch (e) {
     console.error('Error parsing level! Going to give up!')
     console.error(e)
