@@ -40,7 +40,7 @@ ctx.camera.enableFPControls(0, -0.2, 0.002, 90)
 ctx.camera.far = 1122000
 ctx.globalLight.setAsPosition(0, 10000, 0)
 
-const l = ctx.createPointLight([0, 0, 0], [1, 1, 1], 9000)
+const l = ctx.createPointLight([0, 0, 0], [1, 1, 1], 3000)
 ctx.update = () => {
   l.position = ctx.camera.position
 }

@@ -9,6 +9,17 @@ export type int8_t = number
 export type int16_t = number
 export type int32_t = number
 export type float = number
+export type ufixed16 = number
+
+// Mysterious floating number format invented by TR devs
+// See https://opentomb.github.io/TRosettaStone3/trosettastone.html#_fixed_point_data_types
+export function ufixed16ToFloat(ufixed: ufixed16) {
+  // Two bytes little endian whole and fractional parts
+  const whole = ufixed >> 8
+  const fraction = ufixed & 0xff
+
+  return whole + fraction / 256
+}
 
 export type tr_vertex = {
   x: int16_t
@@ -82,6 +93,9 @@ export type tr1_level = {
   numRooms: uint16_t
   rooms: tr_room[]
 
+  numObjectTextures: uint32_t
+  objectTextures: tr_object_texture[]
+
   palette: tr_palette
 }
 
@@ -136,6 +150,41 @@ export function ParseTextile8(data: DataView, offset: number): tr_textile8 {
 }
 
 export const tr_textile8_size = 256 * 256
+
+export type tr_object_texture = {
+  attribute: uint16_t
+  tileAndFlag: uint16_t
+  vertices: tr_object_texture_vert[] // NUM: 4
+}
+
+export const tr_object_texture_size = 20
+
+export function ParseObjectTexture(data: DataView, offset: number): tr_object_texture {
+  return {
+    attribute: data.getUint16(offset, true),
+    tileAndFlag: data.getUint16(offset + 2, true),
+    vertices: [
+      ParseObjectTextureVert(data, offset + 4),
+      ParseObjectTextureVert(data, offset + 8),
+      ParseObjectTextureVert(data, offset + 12),
+      ParseObjectTextureVert(data, offset + 16),
+    ],
+  } as tr_object_texture
+}
+
+export type tr_object_texture_vert = {
+  x: ufixed16
+  y: ufixed16
+}
+
+export const tr_object_texture_vert_size = 4
+
+export function ParseObjectTextureVert(data: DataView, offset: number): tr_object_texture_vert {
+  return {
+    x: data.getUint16(offset, true),
+    y: data.getUint16(offset + 2, true),
+  } as tr_object_texture_vert
+}
 
 // =============================================================================
 // Rooms

@@ -176,9 +176,15 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
   offset += numStaticMeshes * 32 // Skipped data
 
-  const numObjectTextures = data.getUint32(offset, true)
+  level.numObjectTextures = data.getUint32(offset, true)
   offset += 4
-  offset += numObjectTextures * 20 // Skipped data
+
+  // Parse object textures
+  level.objectTextures = new Array<t.tr_object_texture>(level.numObjectTextures)
+  for (let i = 0; i < level.numObjectTextures; i++) {
+    level.objectTextures[i] = t.ParseObjectTexture(data, offset)
+    offset += t.tr_object_texture_size
+  }
 
   const numSpriteTextures = data.getUint32(offset, true)
   offset += 4
