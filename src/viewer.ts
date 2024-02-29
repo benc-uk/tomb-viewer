@@ -24,9 +24,13 @@ export async function renderLevel(ctx: Context, levelName: string) {
     }
 
     // Build all rooms
-    let roomNum = 0
+    const roomNum = 0
     for (const room of level.rooms) {
       const builder = new RenderableBuilder()
+
+      for (let i = 0; i < materials.length; i++) {
+        builder.newPart('tex' + i, materials[i])
+      }
 
       for (const rect of room.roomData.rectangles) {
         const vert1i = rect.vertices[0]
@@ -59,22 +63,23 @@ export async function renderLevel(ctx: Context, levelName: string) {
         const objTexture = level.objectTextures[rect.texture]
 
         // First 14 bits (little endian) of tileAndFlag is the index into the textile array
-        //const texTileIndex = objTexture.tileAndFlag & 0x3fff
+        const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
         // Get the UV of the four corners in objTexture.vertices
-        let texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
-        let texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
-        let texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
-        let texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
-        let texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
-        let texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
-        let texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
-        let texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
-
-        // console.log('UVs:', texU1, texV1, texU2, texV2, texU3, texV3, texU4, texV4)
+        const texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
+        const texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
+        const texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
+        const texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
+        const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
+        const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
+        const texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
+        const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
 
         // Add the rectangle to the builder
-        builder.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
+        const part = builder.getPart('tex' + texTileIndex)
+        if (part) {
+          part.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
+        }
       }
 
       for (const tri of room.roomData.triangles) {
@@ -98,22 +103,25 @@ export async function renderLevel(ctx: Context, levelName: string) {
           room.roomData.vertices[vert3i].vertex.z,
         ] as XYZ
 
-        // Reverse winding order
-        builder.addTriangle(v1, v3, v2)
+        // Texture coordinates
+        const objTexture = level.objectTextures[tri.texture]
+
+        // First 14 bits (little endian) of tileAndFlag is the index into the textile array
+        const texTileIndex = objTexture.tileAndFlag & 0x3fff
+
+        const part = builder.getPart('tex' + texTileIndex)
+        if (part) {
+          part.addTriangle(v1, v3, v2)
+        }
       }
 
       try {
-        // Build the room geometry and add to the world
-        const roomInstance = ctx.createCustomInstance(builder, materials[0])
-
-        // Offset the room to its position
+        const roomInstance = ctx.createCustomInstance(builder)
         roomInstance.position = [room.info.x, 0, -room.info.z]
       } catch (e) {
         console.error('Error creating room:', roomNum)
         console.error(e)
       }
-
-      roomNum++
     }
 
     ctx.camera.position = [level.rooms[0].info.x, 0, -level.rooms[0].info.z]
