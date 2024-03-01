@@ -1,7 +1,7 @@
 {
-  "width": 1280,
+  "width": 640,
   "aspectRatio": 0.75,
-  "fullWidth": false,
+  "fullWidth": true,
   "smoothScale": false,
   "textureFilter": false,
   "drawDistance": 80000,

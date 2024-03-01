@@ -28,6 +28,7 @@ Controls:
 - Cursors keys or WASD to move
 - Mouse to look around
 - Keys '[' and ']' to move up & down
+- Keys 1 & 2 to rotate the light, 3 & 4 to raise and lower it
 
 # Status
 

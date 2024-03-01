@@ -45,14 +45,26 @@ async function startApp() {
   ctx.start()
 
   ctx.camera.far = config.drawDistance
-  ctx.globalLight.setAsPosition(-120, 50, -100)
   ctx.camera.fov = config.fov
 
+  let globalLightAngle = 0
+  let globalLightHeight = 1
   const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 3000)
+
   ctx.update = () => {
     // Light that follows the camera
     camLight.position = ctx.camera.position
+    ctx.globalLight.direction = [Math.cos(globalLightAngle), -globalLightHeight, Math.sin(globalLightAngle)]
   }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '1') globalLightAngle += 0.1
+    if (e.key === '2') globalLightAngle -= 0.1
+    if (e.key === '3') globalLightHeight -= 0.1
+    if (e.key === '4') globalLightHeight += 0.1
+
+    if (globalLightHeight < 0.1) globalLightHeight = 0.1
+  })
 
   // Load the level when the select changes
   document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
