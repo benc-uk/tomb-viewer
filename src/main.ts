@@ -58,12 +58,22 @@ async function startApp() {
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === '1') globalLightAngle += 0.1
-    if (e.key === '2') globalLightAngle -= 0.1
-    if (e.key === '3') globalLightHeight -= 0.1
-    if (e.key === '4') globalLightHeight += 0.1
+    if (e.key === '1') {
+      globalLightAngle += 0.1
+    }
+    if (e.key === '2') {
+      globalLightAngle -= 0.1
+    }
+    if (e.key === '3') {
+      globalLightHeight -= 0.1
+    }
+    if (e.key === '4') {
+      globalLightHeight += 0.1
+    }
 
-    if (globalLightHeight < 0.1) globalLightHeight = 0.1
+    if (globalLightHeight < 0.1) {
+      globalLightHeight = 0.1
+    }
   })
 
   // Load the level when the select changes
