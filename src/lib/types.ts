@@ -279,6 +279,10 @@ export function ParseRoomSprite(data: DataView, offset: number): tr_room_sprite 
   } as tr_room_sprite
 }
 
+export function isWaterRoom(room: tr_room) {
+  return room.flags & 0x1
+}
+
 // =============================================================================
 // Meshes
 // =============================================================================

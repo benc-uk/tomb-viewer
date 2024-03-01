@@ -20,6 +20,7 @@ async function startApp() {
 
   ctx.camera.far = config.drawDistance
   ctx.camera.fov = config.fov
+  ctx.gamma = config.gamma
 
   let globalLightAngle = 0
   let globalLightHeight = 1
@@ -39,10 +40,10 @@ async function startApp() {
       globalLightAngle -= 0.1
     }
     if (e.key === '3') {
-      globalLightHeight -= 0.1
+      globalLightHeight -= 0.03
     }
     if (e.key === '4') {
-      globalLightHeight += 0.1
+      globalLightHeight += 0.03
     }
     if (e.key === 'h') {
       document.querySelector<HTMLDivElement>('#help')!.style.display =

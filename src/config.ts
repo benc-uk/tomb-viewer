@@ -3,6 +3,7 @@ import JSON5 from 'json5'
 type AppConfig = {
   width: number
   aspectRatio: number
+  gamma: number
   fullWidth: boolean
   smoothScale: boolean
   textureFilter: boolean

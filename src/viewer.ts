@@ -2,7 +2,7 @@ import { Context, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { textile8ToBuffer } from './lib/textures'
-import { trVertToXZY, ufixed16ToFloat } from './lib/types'
+import { isWaterRoom, trVertToXZY, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
 
 export async function loadLevelToWorld(ctx: Context, levelName: string) {
@@ -24,7 +24,9 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
     const materials = new Array<Material>()
     for (const textile of level.textiles) {
       const buffer = textile8ToBuffer(textile, level.palette)
-      materials.push(Material.createBasicTexture(buffer, config.textureFilter))
+      const mat = Material.createBasicTexture(buffer, config.textureFilter)
+      mat.alphaCutoff = 0.5 // Makes transparent textures work
+      materials.push(mat)
     }
 
     // Build all rooms
@@ -61,7 +63,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
         const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
 
         // This trick gets the rectangle  added to the right part with the matching textile
-        const part = builder.getPart('textile' + texTileIndex)
+        let part = builder.parts.get('textile' + texTileIndex)
         if (part) {
           // Add the rectangle to the builder
           part.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
@@ -86,7 +88,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
         const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
         const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
-        const part = builder.getPart('textile' + texTileIndex)
+        const part = builder.parts.get('textile' + texTileIndex)
         if (part) {
           part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
         }
@@ -95,6 +97,13 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
       // Build the room! and add it to the world!
       try {
         const roomInstance = ctx.createCustomInstance(builder)
+
+        // Water rooms are blue/green, need to clone the material
+        if (isWaterRoom(room)) {
+          const waterMat = materials[0].clone()
+          waterMat.diffuse = [0, 0.9, 0.8]
+          roomInstance.material = waterMat
+        }
 
         // Room info struct hold room offsets into the world
         roomInstance.position = [room.info.x, 0, -room.info.z]
