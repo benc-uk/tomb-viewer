@@ -5,7 +5,7 @@ import { textile8ToBuffer } from './lib/textures'
 import { trVertToXZY, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
 
-export async function renderLevel(ctx: Context, levelName: string) {
+export async function loadLevelToWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
   const data = await getLevelData(levelName)

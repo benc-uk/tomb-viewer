@@ -1,7 +1,7 @@
 import './style.css'
 
 import { Context } from 'gsots3d'
-import { renderLevel } from './viewer'
+import { loadLevelToWorld } from './viewer'
 import { config, loadConfig } from './config'
 
 // Starts everything, called once the config is loaded
@@ -10,43 +10,11 @@ async function startApp() {
   canvasStyle += config.fullWidth ? 'width: 100%;' : ''
   canvasStyle += config.smoothScale ? '' : 'image-rendering: pixelated;'
 
-  document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<main>
-  <select id="levelSelect">
-    <option value="Tomb-Raider-1/01-Caves.PHD">01 Caves</option>
-    <option value="Tomb-Raider-1/02-City-of-Vilcabamba.PHD">02 City of Vilcabamba</option>
-    <option value="Tomb-Raider-1/03-The-Lost-Valley.PHD">03 The Lost Valley</option>
-    <option value="Tomb-Raider-1/04-Tomb-of-Qualopec.PHD">04 Tomb of Qualopec</option>
-    <option value="Tomb-Raider-1/05-St-Francis-Folly.PHD">05 St Francis' Folly</option>
-    <option value="Tomb-Raider-1/06-Colosseum.PHD">06 Colosseum</option>
-    <option value="Tomb-Raider-1/07-Palace-Midas.PHD">07 Palace Midas</option>
-    <option value="Tomb-Raider-1/08-Cistern.PHD">08 The Cistern</option>
-    <option value="Tomb-Raider-1/09-Tomb-of-Tihocan.PHD">09 Tomb of Tihocan</option>
-    <option value="Tomb-Raider-1/10-City-of-Khamoon.PHD">10 City of Khamoon</option>
-    <option value="Tomb-Raider-1/11-Obelisk-of-Khamoon.PHD">11 Obelisk of Khamoon</option>
-    <option value="Tomb-Raider-1/12-Sanctuary-of-the-Scion.PHD">12 Sanctuary of the Scion</option>
-    <option value="Tomb-Raider-1/13-Natlas-Mines.PHD">13 Natla's Mines</option>
-    <option value="Tomb-Raider-1/14-Atlantis.PHD">14 Atlantis</option>
-    <option value="Tomb-Raider-1/15-The-Great-Pyramid.PHD">15 The Great Pyramid</option>
-    <option value="Tomb-Raider-1/00-Laras-Home.PHD">00 Laras Home</option>
-  </select>
- 
-  <canvas id="canvas" 
-   width="${config.width}" 
-   height="${config.width * config.aspectRatio}" 
-   style="${canvasStyle}">
-  </canvas>
+  document.querySelector<HTMLCanvasElement>('#canvas')!.width = config.width
+  document.querySelector<HTMLCanvasElement>('#canvas')!.height = config.width * config.aspectRatio
+  document.querySelector<HTMLCanvasElement>('#canvas')!.style.cssText = canvasStyle
 
-  <div id="help">
-    <p>Press H to show or hide this help</p>
-    <p>Use the arrow keys or WASD to move</p>
-    <p>Use the mouse to look around</p>
-    <p>Use 1 & 2 to change the global light angle</p>
-    <p>Use 3 & 4 to change the global light height</p>
-    <p>Use [ & ] keys to move up & down</p>
-  </div>
-</main>`
-
+  // Main graphics context
   const ctx = await Context.init()
   ctx.start()
 
@@ -88,12 +56,10 @@ async function startApp() {
 
   // Load the level when the select changes
   document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
-    const levelName = (e.target as HTMLSelectElement).value
-    renderLevel(ctx, levelName)
+    loadLevelToWorld(ctx, (e.target as HTMLSelectElement).value)
   })
 
-  // Trigger the level select to load the first level
-  document.querySelector('#levelSelect')!.dispatchEvent(new Event('change'))
+  loadLevelToWorld(ctx, 'TR1/01-Caves.PHD')
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
