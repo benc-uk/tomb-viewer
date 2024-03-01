@@ -216,11 +216,16 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
   offset += numAnimatedTextures * 2 // Skipped data
 
-  const numEntities = data.getUint32(offset, true)
+  level.numEntities = data.getUint32(offset, true)
   offset += 4
-  offset += numEntities * 22 // Skipped data
+  // Parse entities
+  level.entities = new Array<t.tr_entity>(level.numEntities)
+  for (let i = 0; i < level.numEntities; i++) {
+    level.entities[i] = t.ParseEntity(data, offset)
+    offset += t.tr_entity_size
+  }
 
-  offset += 8192 // Skipped data
+  offset += 8192 // Light map - skipped data
 
   // Parse and read the palette
   level.palette = t.ParsePalette(data, offset)

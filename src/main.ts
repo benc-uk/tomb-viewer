@@ -2,11 +2,15 @@ import './style.css'
 
 import { Context } from 'gsots3d'
 import { renderLevel } from './viewer'
+import { config, loadConfig } from './config'
 
-const canvasWidth = 1024
-const canvasHeight = canvasWidth * (9 / 16)
+// Starts everything, called once the config is loaded
+async function startApp() {
+  let canvasStyle = ''
+  canvasStyle += config.fullWidth ? 'width: 100%;' : ''
+  canvasStyle += config.smoothScale ? '' : 'image-rendering: pixelated;'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+  document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <main>
   <div class="flexrow">
     <span class="title">Tomb Raider - Level Viewer</span>
@@ -26,31 +30,43 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <option value="Tomb-Raider-1/13-Natlas-Mines.PHD">13 Natla's Mines</option>
       <option value="Tomb-Raider-1/14-Atlantis.PHD">14 Atlantis</option>
       <option value="Tomb-Raider-1/15-The-Great-Pyramid.PHD">15 The Great Pyramid</option>
+      <option value="Tomb-Raider-1/00-Laras-Home.PHD">00 Laras Home</option>
     </select>
   </div>
 
-  <canvas id="canvas" width="${canvasWidth}" height="${canvasHeight}"></canvas>
-  <div id="textures"></div>
-</main>
-`
+  <canvas id="canvas" 
+   width="${config.width}" 
+   height="${config.width * config.aspectRatio}" 
+   style="${canvasStyle}">
+  </canvas>
+</main>`
 
-const ctx = await Context.init()
-ctx.start()
-ctx.camera.enableFPControls(0, -0.2, 0.002, 90)
-ctx.camera.far = 1122000
-ctx.globalLight.setAsPosition(100, 50, 100)
+  const ctx = await Context.init()
+  ctx.start()
 
-const l = ctx.createPointLight([0, 0, 0], [1, 1, 1], 3000)
-ctx.update = () => {
-  l.position = ctx.camera.position
+  ctx.camera.far = config.drawDistance
+  ctx.globalLight.setAsPosition(-120, 50, -100)
+  ctx.camera.fov = config.fov
+
+  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 3000)
+  ctx.update = () => {
+    // Light that follows the camera
+    camLight.position = ctx.camera.position
+  }
+
+  // Load the level when the select changes
+  document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
+    const levelName = (e.target as HTMLSelectElement).value
+    renderLevel(ctx, levelName)
+  })
+
+  // Trigger the level select to load the first level
+  document.querySelector('#levelSelect')!.dispatchEvent(new Event('change'))
 }
 
-document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
-  document.querySelector('#textures')!.innerHTML = ''
+// =============================================================================
+// ENTRY POINT
+// =============================================================================
 
-  const levelName = (e.target as HTMLSelectElement).value
-  renderLevel(ctx, levelName)
-})
-
-// Trigger the level select to load the first level
-document.querySelector('#levelSelect')!.dispatchEvent(new Event('change'))
+await loadConfig()
+startApp()

@@ -1,0 +1,9 @@
+{
+  "width": 1280,
+  "aspectRatio": 0.75,
+  "fullWidth": false,
+  "smoothScale": false,
+  "textureFilter": false,
+  "drawDistance": 80000,
+  "fov": 60
+}

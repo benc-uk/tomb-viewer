@@ -2,6 +2,8 @@
 // Basic types
 // =============================================================================
 
+import { XYZ } from 'gsots3d'
+
 export type uint8_t = number
 export type uint16_t = number
 export type uint32_t = number
@@ -35,6 +37,10 @@ export function ParseVertex(data: DataView, offset: number) {
   } as tr_vertex
 }
 
+export function trVertToXZY(v: tr_vertex) {
+  return [v.x, v.y, v.z] as XYZ
+}
+
 export const tr_vertex_size = 6
 
 export type tr_face3 = {
@@ -60,12 +66,7 @@ export const tr_face4_size = 4 * 2 + 2
 
 export function ParseFace4(data: DataView, offset: number): tr_face4 {
   return {
-    vertices: [
-      data.getUint16(offset, true),
-      data.getUint16(offset + 2, true),
-      data.getUint16(offset + 4, true),
-      data.getUint16(offset + 6, true),
-    ],
+    vertices: [data.getUint16(offset, true), data.getUint16(offset + 2, true), data.getUint16(offset + 4, true), data.getUint16(offset + 6, true)],
     texture: data.getUint16(offset + 8, true),
   } as tr_face4
 }
@@ -95,6 +96,9 @@ export type tr1_level = {
 
   numObjectTextures: uint32_t
   objectTextures: tr_object_texture[]
+
+  numEntities: uint32_t
+  entities: tr_entity[]
 
   palette: tr_palette
 }
@@ -301,4 +305,34 @@ export type tr_mesh = {
 
   numColouredTriangles: uint16_t
   colouredTriangles: tr_face3[]
+}
+
+// =============================================================================
+// Entities
+// =============================================================================
+
+export type tr_entity = {
+  type: uint16_t
+  room: uint16_t
+  x: int32_t
+  y: int32_t
+  z: int32_t
+  angle: int16_t
+  intensity1: int16_t
+  flags: uint16_t
+}
+
+export const tr_entity_size = 22
+
+export function ParseEntity(data: DataView, offset: number): tr_entity {
+  return {
+    type: data.getInt16(offset, true),
+    room: data.getInt16(offset + 2, true),
+    x: data.getInt32(offset + 4, true),
+    y: data.getInt32(offset + 8, true),
+    z: data.getInt32(offset + 12, true),
+    angle: data.getInt16(offset + 16, true),
+    intensity1: data.getInt16(offset + 18, true),
+    flags: data.getInt16(offset + 20, true),
+  } as tr_entity
 }

@@ -1,6 +1,7 @@
 {
   "name": "tomb-viewer",
   "author": "Ben Coleman",
+  "description": "Classic Tomb Raider level viewer in WebGL",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -22,6 +23,6 @@
     "vite": "^5.1.4"
   },
   "dependencies": {
-    "gsots3d": "0.0.5-alpha.9"
+    "gsots3d": "0.0.5-alpha.10"
   }
 }
