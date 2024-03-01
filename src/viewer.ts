@@ -36,7 +36,6 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
       // Skip alternate rooms
       // TODO: This is a bit of a hack, need to figure out how to handle these
       if (room.alternateRoom !== -1) {
-        //console.log('Skipping alternate room:', roomNum - 1, room.alternateRoom)
         continue
       }
 
@@ -72,7 +71,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
         const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
 
         // This trick gets the rectangle  added to the right part with the matching textile
-        let part = builder.parts.get('textile' + texTileIndex)
+        const part = builder.parts.get('textile' + texTileIndex)
         if (part) {
           // Add the rectangle to the builder
           part.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
