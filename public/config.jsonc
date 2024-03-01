@@ -1,7 +1,8 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 640,
+  "width": 800,
   "aspectRatio": 0.75,
+  // "aspectRatio": 0.5625,
 
   // This will stretch the canvas to fit the browser window width
   "fullWidth": true,
