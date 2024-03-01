@@ -8,7 +8,7 @@ export function parseLevel(dataArray: Uint8Array): t.tr1_level {
   // Need a DataView to help us read the file
   const data = new DataView(dataArray.buffer)
 
-  console.log('Parsing level, bytes: ' + dataArray.length)
+  console.log(`📜 Parsing level, bytes: ${dataArray.length}`)
 
   const verMagic = data.getUint32(0, true)
 
@@ -118,9 +118,9 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += 2
     offset += room.numStaticMeshes * 18 // Skipped data
 
-    room.alternateRoom = data.getUint16(offset, true)
+    room.alternateRoom = data.getInt16(offset, true)
     offset += 2
-    room.flags = data.getUint16(offset, true)
+    room.flags = data.getInt16(offset, true)
     offset += 2
 
     level.rooms[i] = room

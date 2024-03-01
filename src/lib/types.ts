@@ -205,8 +205,8 @@ export type tr_room = {
   ambientIntensity: uint16_t
   numLights: uint16_t
   numStaticMeshes: uint16_t
-  alternateRoom: uint16_t
-  flags: uint16_t
+  alternateRoom: int16_t
+  flags: int16_t
 }
 
 export type tr_room_info = {

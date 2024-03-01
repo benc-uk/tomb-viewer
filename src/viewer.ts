@@ -9,7 +9,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
   const data = await getLevelData(levelName)
-  console.log('Loading file: ' + levelName)
+  console.log('💽 Loading file: ' + levelName)
 
   try {
     // Kinda important!
@@ -18,7 +18,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
     ctx.removeAllInstances()
     TextureCache.clear()
 
-    console.log('Loaded level: ' + levelName)
+    console.log(`✨ Loaded level OK, ${level.numRooms} rooms, ${level.numEntities} entities`)
 
     // Create all materials one for each textile
     const materials = new Array<Material>()
@@ -30,11 +30,20 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
     }
 
     // Build all rooms
-    const roomNum = 0
+    let roomNum = 0
     for (const room of level.rooms) {
+      roomNum++
+      // Skip alternate rooms
+      // TODO: This is a bit of a hack, need to figure out how to handle these
+      if (room.alternateRoom !== -1) {
+        //console.log('Skipping alternate room:', roomNum - 1, room.alternateRoom)
+        continue
+      }
+
       const builder = new RenderableBuilder()
 
       // Add a part to the room, one for each textile
+      // This is part of the trick to get the right texture on the right part
       for (let i = 0; i < materials.length; i++) {
         builder.newPart('textile' + i, materials[i])
       }
@@ -108,7 +117,7 @@ export async function loadLevelToWorld(ctx: Context, levelName: string) {
         // Room info struct hold room offsets into the world
         roomInstance.position = [room.info.x, 0, -room.info.z]
       } catch (e) {
-        console.error('Error creating room:', roomNum)
+        console.error(`💥 Error building room geometry! ${roomNum - 1}`)
         console.error(e)
       }
     }
