@@ -23,6 +23,7 @@
     "vite": "^5.1.4"
   },
   "dependencies": {
-    "gsots3d": "0.0.5-alpha.10"
+    "gsots3d": "0.0.5-alpha.10",
+    "json5": "^2.2.3"
   }
 }

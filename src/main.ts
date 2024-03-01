@@ -49,7 +49,7 @@ async function startApp() {
 
   let globalLightAngle = 0
   let globalLightHeight = 1
-  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 3000)
+  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 1000)
 
   ctx.update = () => {
     // Light that follows the camera

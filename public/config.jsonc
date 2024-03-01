@@ -1,0 +1,18 @@
+{
+  // Resolution settings, note height is calculated from aspect ratio
+  "width": 640,
+  "aspectRatio": 0.75,
+
+  // This will stretch the canvas to fit the browser window width
+  "fullWidth": true,
+
+  // When stretching the canvas, this will turn smoothing on or off
+  "smoothScale": false,
+
+  // Enable texture filtering
+  "textureFilter": false,
+
+  // Camera settings
+  "drawDistance": 80000,
+  "fov": 70,
+}

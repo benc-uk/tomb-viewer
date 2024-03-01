@@ -32,12 +32,13 @@ select {
 }
 
 canvas {
+  margin-top: 1rem;
+  margin-right: auto;
+  margin-left: auto;
   display: block;
-  margin: 0 auto;
-  border: 1px solid #25c796;
   border-radius: 0.5rem;
   background-color: black;
-  margin: 1rem 0rem;
+  border: 2px solid black;
 }
 
 .flexrow {

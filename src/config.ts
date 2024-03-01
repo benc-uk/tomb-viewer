@@ -1,3 +1,5 @@
+import JSON5 from 'json5'
+
 type AppConfig = {
   width: number
   aspectRatio: number
@@ -12,6 +14,7 @@ type AppConfig = {
 export let config = {} as AppConfig
 
 export async function loadConfig() {
-  const configResp = await fetch('config.json')
-  config = await configResp.json()
+  const configResp = await fetch('config.jsonc')
+  const configText = await configResp.text()
+  config = JSON5.parse(configText) as AppConfig
 }

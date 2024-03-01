@@ -1,8 +1,8 @@
 # Tomb Viewer
 
-This is an attempt to develop a WebGL based viewer and renderer for classic Tomb Raider levels.
+This is WebGL based viewer and renderer for classic Tomb Raider levels.
 
-It is written in TypeScript with Vite and uses my [GSOTS3D](https://github.com/benc-uk/gsots3d) library, it is a standalone static webapp.
+It is written in TypeScript with Vite.js and uses my [GSOTS3D](https://github.com/benc-uk/gsots3d) library for all 3D rendering, it is a standalone static webapp.
 
 Status:
 
@@ -16,6 +16,15 @@ Status:
 ![](./screens/valley.png)
 ![](./screens/atlantis.png)
 ![](./screens/egypt.png)
+
+Todo:
+
+- Transparent textures
+- Eliminate texture seams
+- Update lighting
+- Sprites
+- Items
+- Static meshes
 
 # Try It
 

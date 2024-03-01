@@ -6,6 +6,9 @@ export default {
   },
   build: {
     target: 'esnext',
+    watch: {
+      include: './public/config.jsonc',
+    },
   },
   base: '/tomb-viewer/',
 }
