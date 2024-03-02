@@ -80,14 +80,14 @@ export async function buildWorld(ctx: Context, levelName: string) {
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
       // Get the UV of the four corners in objTexture.vertices
-      let texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
-      let texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
-      let texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
-      let texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
-      let texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
-      let texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
-      let texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
-      let texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
+      const texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
+      const texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
+      const texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
+      const texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
+      const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
+      const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
+      const texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
+      const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
 
       // This trick gets the rectangle  added to the right part with the matching textile
       const part = builder.parts.get('textile' + texTileIndex)

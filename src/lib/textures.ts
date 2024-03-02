@@ -1,5 +1,4 @@
-import { get } from 'http'
-import { tr_palette, tr_sprite_texture, tr_textile8, tr_textile8_size } from './types'
+import { tr_palette, tr_textile8, tr_textile8_size } from './types'
 
 /**
  * Return a tr_textile8 as a ArrayBuffer
