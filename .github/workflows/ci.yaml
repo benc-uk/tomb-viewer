@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'src/**'
+      - '.github/workflows/ci.yaml'
   pull_request:
     branches:
       - main
