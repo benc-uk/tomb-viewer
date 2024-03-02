@@ -29,7 +29,13 @@ async function startApp() {
 
   let globalLightAngle = 0
   let globalLightHeight = 1
-  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 1000)
+  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 10)
+
+  // constant = 0.5, linear = 0.018, quad = 0.0003
+  // camLight.linear = 0.00000018
+  camLight.quad = 0.000000000000000003
+  camLight.constant = 1
+  camLight.colour = [2, 2, 2]
 
   ctx.update = () => {
     // A light that follows the camera
@@ -81,7 +87,7 @@ async function startApp() {
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3000)
+  }, 3)
 }
 
 // =============================================================================

@@ -30,7 +30,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
   const buffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
   for (const textile of level.textiles) {
     const buffer = textile8ToBuffer(textile, level.palette)
-    const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
+    const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { wrap: 0x812f })
     mat.alphaCutoff = 0.5 // Makes transparent textures work
     materials.push(mat)
     buffers.push(buffer)
@@ -80,14 +80,70 @@ export async function buildWorld(ctx: Context, levelName: string) {
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
       // Get the UV of the four corners in objTexture.vertices
-      const texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
-      const texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
-      const texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
-      const texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
-      const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
-      const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
-      const texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
-      const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
+      let texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
+      let texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
+      let texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
+      let texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
+      let texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
+      let texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
+      let texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
+      let texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
+
+      // Move the UV outwards from center to avoid texture bleeding
+      // This is pretty much a hack, but I spent hours looking for a better way
+      const uvPadding = 0.006
+      const uvCenterX = (texU1 + texU2 + texU3 + texU4) / 4
+      const uvCenterY = (texV1 + texV2 + texV3 + texV4) / 4
+
+      if (texU1 > uvCenterX) {
+        texU1 -= uvPadding
+      }
+      if (texU1 < uvCenterX) {
+        texU1 += uvPadding
+      }
+      if (texU2 > uvCenterX) {
+        texU2 -= uvPadding
+      }
+      if (texU2 < uvCenterX) {
+        texU2 += uvPadding
+      }
+      if (texU3 > uvCenterX) {
+        texU3 -= uvPadding
+      }
+      if (texU3 < uvCenterX) {
+        texU3 += uvPadding
+      }
+      if (texU4 > uvCenterX) {
+        texU4 -= uvPadding
+      }
+      if (texU4 < uvCenterX) {
+        texU4 += uvPadding
+      }
+
+      if (texV1 > uvCenterY) {
+        texV1 -= uvPadding
+      }
+      if (texV1 < uvCenterY) {
+        texV1 += uvPadding
+      }
+      if (texV2 > uvCenterY) {
+        texV2 -= uvPadding
+      }
+      if (texV2 < uvCenterY) {
+        texV2 += uvPadding
+      }
+      if (texV3 > uvCenterY) {
+        texV3 -= uvPadding
+      }
+      if (texV3 < uvCenterY) {
+        texV3 += uvPadding
+      }
+      if (texV4 > uvCenterY) {
+        texV4 -= uvPadding
+      }
+      if (texV4 < uvCenterY) {
+        texV4 += uvPadding
+      }
 
       // This trick gets the rectangle  added to the right part with the matching textile
       const part = builder.parts.get('textile' + texTileIndex)

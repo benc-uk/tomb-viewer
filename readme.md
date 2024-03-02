@@ -19,9 +19,7 @@ Status:
 
 Todo:
 
-- Eliminate texture seams
 - Update lighting
-- Sprites
 - Items
 - Static meshes
 
