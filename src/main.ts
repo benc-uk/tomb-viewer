@@ -86,7 +86,7 @@ async function startApp() {
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3)
+  }, 3000)
 }
 
 // =============================================================================

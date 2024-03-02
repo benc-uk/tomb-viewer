@@ -3,7 +3,7 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { Context, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
+import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
@@ -48,14 +48,19 @@ export async function buildWorld(ctx: Context, levelName: string) {
     spriteMaterials.push(mat)
   }
 
+  // Needed to track alternate room pairs
+  const altRoomPairs: Array<[number, number]> = []
+
+  // Map of room number to instance for easy retrieval
+  const roomInstances = new Map<number, Instance>()
+
   // Core loop - build all room geometry
-  let roomNum = 0
-  for (const room of level.rooms) {
-    roomNum++
-    // Skip alternate rooms
-    // FIXME: This is a bit of a hack, need to figure out how to handle these better
+  for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
+    const room = level.rooms[roomNum]
+
+    // Find the alternate room pairs
     if (room.alternateRoom !== -1) {
-      continue
+      altRoomPairs.push([roomNum, room.alternateRoom])
     }
 
     const builder = new RenderableBuilder()
@@ -203,6 +208,8 @@ export async function buildWorld(ctx: Context, levelName: string) {
     // Build the room and add it to the world
     try {
       const roomInstance = ctx.createCustomInstance(builder)
+      // We hope the order is
+      roomInstances.set(roomNum, roomInstance)
 
       // Water rooms are blue/green, need to clone the material
       if (isWaterRoom(room)) {
@@ -217,6 +224,11 @@ export async function buildWorld(ctx: Context, levelName: string) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
     }
+  }
+
+  // Hide one half of alternate room pairs, doesn't matter which
+  for (const pairs of altRoomPairs) {
+    roomInstances.get(pairs[0])!.enabled = false
   }
 
   // Find the entity with ID type 0 this is Lara and the start point
@@ -240,4 +252,16 @@ export async function buildWorld(ctx: Context, levelName: string) {
   if (config.startPos) {
     ctx.camera.position = config.startPos
   }
+
+  window.addEventListener('keydown', (e) => {
+    // Swap toggle between all the alternate rooms
+    if (e.key === 'x') {
+      for (const pairs of altRoomPairs) {
+        const room1 = roomInstances.get(pairs[0])!
+        const room2 = roomInstances.get(pairs[1])!
+        room1.enabled = !room1.enabled
+        room2.enabled = !room2.enabled
+      }
+    }
+  })
 }
