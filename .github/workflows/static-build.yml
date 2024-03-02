@@ -43,7 +43,7 @@ jobs:
       - name: Install GSOTS3D from main
         run: |
           rm -rf package-lock.json
-          npm install benc-uk/gsots3d#main
+          npm install github:benc-uk/gsots3d#main
 
       - name: Run build
         run: |

@@ -25,8 +25,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install GSOTS3D
-        run: npm install benc-uk/gsots3d#main
+      - name: Install dev dependencies
+        run: npm install --only=dev
 
       - name: Run lint & format check
         run: |
