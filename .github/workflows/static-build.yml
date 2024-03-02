@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Build
+name: Build Static Site
 
 on:
   # Runs on pushes targeting the default branch
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   # Single deploy job since we're just deploying
-  deploy:
+  build-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -31,14 +31,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout GSOTS3D
-        uses: actions/checkout@v4
-        with:
-          repository: 'benc-uk/gsots3d'
-          path: './gsots3d'
-          ref: 'main'
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -48,11 +40,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install GSOTS3D
-        run: npm install './gsots3d'
+      - name: Install GSOTS3D from main
+        run: npm install benc-uk/gsots3d#main
 
       - name: Run build
         run: |
