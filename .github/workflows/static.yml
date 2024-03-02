@@ -48,11 +48,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install GSOTS3D
-        run: npm install './temp/gsots3d'
-
       - name: Install dependencies
         run: npm ci
+
+      - name: Install GSOTS3D
+        run: npm install './temp/gsots3d'
 
       - name: Run build
         run: |
