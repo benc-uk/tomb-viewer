@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'benc-uk/gsots3d'
-          path: './temp/gsots3d'
+          path: './gsots3d'
           ref: 'main'
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -52,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Install GSOTS3D
-        run: npm install './temp/gsots3d'
+        run: npm install './gsots3d'
 
       - name: Run build
         run: |
