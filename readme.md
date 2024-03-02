@@ -14,8 +14,8 @@ Status:
 ![](./screens/sphinx.png)
 ![](./screens/folly.png)
 ![](./screens/valley.png)
+![](./screens/water1.png)
 ![](./screens/atlantis.png)
-![](./screens/egypt.png)
 
 Todo:
 
