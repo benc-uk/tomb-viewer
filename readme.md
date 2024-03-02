@@ -19,7 +19,6 @@ Status:
 
 Todo:
 
-- Transparent textures
 - Eliminate texture seams
 - Update lighting
 - Sprites

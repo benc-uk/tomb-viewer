@@ -1,6 +1,6 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 800,
+  "width": 640,
   "aspectRatio": 0.75,
   // "aspectRatio": 0.5625,
 
@@ -19,4 +19,9 @@
   // Camera settings
   "drawDistance": 80000,
   "fov": 70,
+  "speed": 70,
+
+  // Debug
+  "startLevel": "TR1/02-City-of-Vilcabamba.PHD",
+  // "startPos": [65935, 1026, -28089],
 }

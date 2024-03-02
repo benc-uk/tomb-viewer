@@ -100,6 +100,9 @@ export type tr1_level = {
   numEntities: uint32_t
   entities: tr_entity[]
 
+  numSpriteTextures: uint32_t
+  spriteTextures: tr_sprite_texture[]
+
   palette: tr_palette
 }
 
@@ -339,4 +342,36 @@ export function ParseEntity(data: DataView, offset: number): tr_entity {
     intensity1: data.getInt16(offset + 18, true),
     flags: data.getInt16(offset + 20, true),
   } as tr_entity
+}
+
+// =============================================================================
+// Sprites
+// =============================================================================
+
+export type tr_sprite_texture = {
+  tile: uint16_t
+  x: uint8_t
+  y: uint8_t
+  width: uint16_t
+  height: uint16_t
+  leftSide: int16_t
+  topSide: int16_t
+  rightSide: int16_t
+  bottomSide: int16_t
+}
+
+export const tr_sprite_texture_size = 16
+
+export function ParseSpriteTexture(data: DataView, offset: number): tr_sprite_texture {
+  return {
+    tile: data.getUint16(offset, true),
+    x: data.getUint8(offset + 2),
+    y: data.getUint8(offset + 3),
+    width: data.getUint16(offset + 4, true),
+    height: data.getUint16(offset + 6, true),
+    leftSide: data.getInt16(offset + 8, true),
+    topSide: data.getInt16(offset + 10, true),
+    rightSide: data.getInt16(offset + 12, true),
+    bottomSide: data.getInt16(offset + 14, true),
+  } as tr_sprite_texture
 }

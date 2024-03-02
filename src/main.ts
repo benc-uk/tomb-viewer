@@ -1,7 +1,12 @@
+// =============================================================================
+// Project: WebGL Tomb Raider
+// Main entry point for the app and HTML/JS initialization
+// =============================================================================
+
 import './style.css'
 
 import { Context } from 'gsots3d'
-import { loadLevelToWorld } from './viewer'
+import { buildWorld } from './builder'
 import { config, loadConfig } from './config'
 
 // Starts everything, called once the config is loaded
@@ -14,7 +19,7 @@ async function startApp() {
   document.querySelector<HTMLCanvasElement>('#canvas')!.height = config.width * config.aspectRatio
   document.querySelector<HTMLCanvasElement>('#canvas')!.style.cssText = canvasStyle
 
-  // Main graphics context
+  // Main 3D graphics context, using GSOTS3D
   const ctx = await Context.init()
   ctx.start()
 
@@ -27,7 +32,7 @@ async function startApp() {
   const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 1000)
 
   ctx.update = () => {
-    // Light that follows the camera
+    // A light that follows the camera
     camLight.position = ctx.camera.position
     ctx.globalLight.direction = [Math.cos(globalLightAngle), -globalLightHeight, Math.sin(globalLightAngle)]
   }
@@ -49,6 +54,11 @@ async function startApp() {
       document.querySelector<HTMLDivElement>('#help')!.style.display =
         document.querySelector<HTMLDivElement>('#help')!.style.display === 'none' ? 'block' : 'none'
     }
+    if (e.key === 'p') {
+      console.log(
+        'Position: ' + Math.round(ctx.camera.position[0]) + ', ' + Math.round(ctx.camera.position[1]) + ', ' + Math.round(ctx.camera.position[2])
+      )
+    }
 
     if (globalLightHeight < 0.1) {
       globalLightHeight = 0.1
@@ -57,14 +67,21 @@ async function startApp() {
 
   // Load the level when the select changes
   document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
-    loadLevelToWorld(ctx, (e.target as HTMLSelectElement).value)
+    document.querySelector<HTMLDivElement>('#error')!.style.display = 'none'
+    buildWorld(ctx, (e.target as HTMLSelectElement).value).catch((err) => {
+      document.querySelector<HTMLDivElement>('#error')!.innerText = err
+      document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+    })
   })
 
-  loadLevelToWorld(ctx, 'TR1/01-Caves.PHD')
+  buildWorld(ctx, config.startLevel ?? 'TR1/01-Caves.PHD').catch((err) => {
+    document.querySelector<HTMLDivElement>('#error')!.innerText = err
+    document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+  })
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3000)
+  }, 3)
 }
 
 // =============================================================================

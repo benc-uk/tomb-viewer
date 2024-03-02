@@ -178,7 +178,6 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   level.numObjectTextures = data.getUint32(offset, true)
   offset += 4
-
   // Parse object textures
   level.objectTextures = new Array<t.tr_object_texture>(level.numObjectTextures)
   for (let i = 0; i < level.numObjectTextures; i++) {
@@ -186,9 +185,13 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += t.tr_object_texture_size
   }
 
-  const numSpriteTextures = data.getUint32(offset, true)
+  level.numSpriteTextures = data.getUint32(offset, true)
   offset += 4
-  offset += numSpriteTextures * 16 // Skipped data
+  level.spriteTextures = new Array<t.tr_sprite_texture>(level.numSpriteTextures)
+  for (let i = 0; i < level.numSpriteTextures; i++) {
+    level.spriteTextures[i] = t.ParseSpriteTexture(data, offset)
+    offset += t.tr_sprite_texture_size
+  }
 
   const numSpriteSequences = data.getUint32(offset, true)
   offset += 4

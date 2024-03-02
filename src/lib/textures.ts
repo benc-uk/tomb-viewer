@@ -1,4 +1,5 @@
-import { tr_palette, tr_textile8, tr_textile8_size } from './types'
+import { get } from 'http'
+import { tr_palette, tr_sprite_texture, tr_textile8, tr_textile8_size } from './types'
 
 /**
  * Return a tr_textile8 as a ArrayBuffer
@@ -20,6 +21,24 @@ export function textile8ToBuffer(tex: tr_textile8, palette: tr_palette) {
     imgData[i * 4 + 2] = colour.b * 3
     // Palette index 0 is transparent, so we set the alpha to 0
     imgData[i * 4 + 3] = tex[i] === 0 ? 0 : 255
+  }
+
+  return imgData
+}
+
+export function getRegionFromBuffer(srcBuffer: Uint8Array, offsetX: number, offsetY: number, width: number, height: number, srcWidth = 256) {
+  const buffer = new ArrayBuffer(width * height * 4)
+  const imgData = new Uint8Array(buffer)
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIndex = ((y + offsetY) * srcWidth + (x + offsetX)) * 4
+      const dstIndex = (y * width + x) * 4
+      imgData[dstIndex] = srcBuffer[srcIndex]
+      imgData[dstIndex + 1] = srcBuffer[srcIndex + 1]
+      imgData[dstIndex + 2] = srcBuffer[srcIndex + 2]
+      imgData[dstIndex + 3] = srcBuffer[srcIndex + 3]
+    }
   }
 
   return imgData
