@@ -20,8 +20,8 @@ Status:
 Todo:
 
 - Update lighting
-- Items
-- Static meshes
+- FIX: Sprites look a bit wrong, esp on items
+- Meshes
 
 # Try It
 

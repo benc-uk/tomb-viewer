@@ -42,3 +42,8 @@ export function getRegionFromBuffer(srcBuffer: Uint8Array, offsetX: number, offs
 
   return imgData
 }
+
+export function bufferToImageData(buffer: ArrayBuffer, width: number, height: number) {
+  const imgData = new ImageData(new Uint8ClampedArray(buffer), width, height)
+  return imgData
+}

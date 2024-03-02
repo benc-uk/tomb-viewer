@@ -9,6 +9,7 @@ import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { isWaterRoom, trVertToXZY, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
+import { isLara, isPickup, mapPickupToSpriteId } from './lib/entitys'
 
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -231,8 +232,22 @@ export async function buildWorld(ctx: Context, levelName: string) {
     roomInstances.get(pairs[0])!.enabled = false
   }
 
+  // Add entities to the world
+  for (const entity of level.entities) {
+    const vert = [entity.x, entity.y, entity.z] as XYZ
+
+    // Pickup items are all sprites
+    if (isPickup(entity.type, level.version)) {
+      const spriteId = mapPickupToSpriteId(entity.type, level.version)
+      if (spriteId) {
+        const inst = ctx.createBillboardInstance(spriteMaterials[spriteId], 300)
+        inst.position = [vert[0], -vert[1] - 32, -vert[2]] as XYZ
+      }
+    }
+  }
+
   // Find the entity with ID type 0 this is Lara and the start point
-  const laraStart = level.entities.find((e) => e.type === 0)
+  const laraStart = level.entities.find((e) => isLara(e.type))
   if (laraStart) {
     ctx.camera.position = [laraStart.x, -laraStart.y + 512, -laraStart.z] as XYZ
 
