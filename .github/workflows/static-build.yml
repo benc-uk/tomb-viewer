@@ -41,7 +41,9 @@ jobs:
           node-version: 20
 
       - name: Install GSOTS3D from main
-        run: npm install benc-uk/gsots3d#main
+        run: |
+          rm -rf package-lock.json
+          npm install benc-uk/gsots3d#main
 
       - name: Run build
         run: |
