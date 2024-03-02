@@ -31,8 +31,7 @@ async function startApp() {
   let globalLightHeight = 1
   const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 10)
 
-  // constant = 0.5, linear = 0.018, quad = 0.0003
-  // camLight.linear = 0.00000018
+  // Aargh point lights are so bad at this scale
   camLight.quad = 0.000000000000000003
   camLight.constant = 1
   camLight.colour = [2, 2, 2]
