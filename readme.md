@@ -10,6 +10,7 @@ Status:
 - Level file parsing
 - Texture data loaded from level file
 - Level geometry rendered with correct textures and normals
+- Transparency and sprites
 
 ![](./screens/sphinx.png)
 ![](./screens/folly.png)

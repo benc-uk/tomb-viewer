@@ -3,13 +3,13 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
+import { BillboardType, Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
-import { isWaterRoom, trVertToXZY, ufixed16ToFloat } from './lib/types'
+import { isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
-import { isLara, isPickup, mapPickupToSpriteId } from './lib/entitys'
+import { Category, isEntityInCategory, MagicSpriteLookup } from './lib/entity'
 
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -187,23 +187,9 @@ export async function buildWorld(ctx: Context, levelName: string) {
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
-
-      // Rest of the sprite data is in the spriteTextures array, indexed on roomSprite.texture
-      const spriteTex = level.spriteTextures[roomSprite.texture]
-      const worldHeight = spriteTex.bottomSide - spriteTex.topSide
-      const worldWid = spriteTex.rightSide - spriteTex.leftSide
-
-      // Create instance in the world
-      const spriteInst = ctx.createBillboardInstance(spriteMaterials[roomSprite.texture], worldHeight)
-      // Scale to match the sprite's aspect ratio
-      spriteInst.scale = [1, worldHeight / worldWid, 1]
-
-      // HACK: Figure out what is happening with those damn vines!!
-      if (roomSprite.texture === 147) {
-        vert[1] -= 2500
-      }
-
-      spriteInst.position = [vert[0] + room.info.x, vert[1], (vert[2] -= room.info.z)] as XYZ
+      vert[0] += room.info.x
+      vert[2] -= room.info.z
+      createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx)
     }
 
     // Build the room and add it to the world
@@ -236,23 +222,21 @@ export async function buildWorld(ctx: Context, levelName: string) {
   for (const entity of level.entities) {
     const vert = [entity.x, entity.y, entity.z] as XYZ
 
-    // Pickup items are all sprites
-    if (isPickup(entity.type, level.version)) {
-      const spriteId = mapPickupToSpriteId(entity.type, level.version)
-      if (spriteId) {
-        const inst = ctx.createBillboardInstance(spriteMaterials[spriteId], 300)
-        inst.position = [vert[0], -vert[1] - 32, -vert[2]] as XYZ
-      }
+    if (isEntityInCategory(entity, Category.PICKUP, level.version)) {
+      const spriteId = MagicSpriteLookup[level.version]?.get(entity.type) || 0
+      vert[1] = -vert[1]
+      vert[2] = -vert[2]
+      createSpriteInst(vert, spriteId, level.spriteTextures, spriteMaterials, ctx)
     }
   }
 
   // Find the entity with ID type 0 this is Lara and the start point
-  const laraStart = level.entities.find((e) => isLara(e.type))
-  if (laraStart) {
-    ctx.camera.position = [laraStart.x, -laraStart.y + 512, -laraStart.z] as XYZ
+  const lara = level.entities.find((e) => isEntityInCategory(e, Category.LARA, level.version))
+  if (lara) {
+    ctx.camera.position = [lara.x, -lara.y + 512, -lara.z] as XYZ
 
     let camAngle = 0
-    const angle = laraStart.angle
+    const angle = lara.angle
     if (angle === 16384) {
       camAngle = -Math.PI / 2
     }
@@ -279,4 +263,22 @@ export async function buildWorld(ctx: Context, levelName: string) {
       }
     }
   })
+}
+
+function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite_texture[], spriteMaterials: Material[], ctx: Context) {
+  const spriteTex = spriteTextures[spriteId]
+  const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
+  const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
+  let size = spriteWorldH * 0.9
+  let aspect = spriteWorldH / spriteWorldW
+
+  // Check aspect
+  if (spriteWorldW > spriteWorldH) {
+    size = spriteWorldW
+    size *= 1.2
+  }
+
+  const spriteInst = ctx.createBillboardInstance(spriteMaterials[spriteId], size)
+  spriteInst.scale = [1, aspect, 1]
+  spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
 }

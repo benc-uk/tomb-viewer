@@ -19,7 +19,7 @@
   // Camera settings
   "drawDistance": 80000,
   "fov": 70,
-  "speed": 70,
+  "speed": 270,
 
   // Debug
   // "startLevel": "TR1/06-Colosseum.PHD",
