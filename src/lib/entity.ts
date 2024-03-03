@@ -15,17 +15,15 @@ export enum Category {
   OTHER = 8,
 }
 
-// Internal entity used for DB
+// Internal entity struct used for DB entries
 type Entity = {
   entityId: number
   name: string
   category: Category
 }
 
-type EntityDBMap = { [key in tr_version]?: Entity[] }
-
 // Entity database for each game version and every entity
-export const EntityDB: EntityDBMap = {
+export const EntityDB: { [key in tr_version]?: Entity[] } = {
   [tr_version.TR1]: [
     { entityId: 0, name: 'Lara', category: Category.LARA },
     { entityId: 7, name: 'Wolf', category: Category.ENEMY },
@@ -59,12 +57,10 @@ export function isEntityInCategory(entity: tr_entity, category: Category, versio
   return dbEntity?.category === category
 }
 
-type FixedSpriteIDMap = { [key in tr_version]?: Map<number, number> }
-
 /**
  * Maps entity IDs to fixed/well-known sprite IDs only used for pickups
  */
-export const MagicSpriteLookup: FixedSpriteIDMap = {
+export const PickupSpriteLookup: { [key in tr_version]?: Map<number, number> } = {
   [tr_version.TR1]: new Map([
     [84, 0],
     [85, 1],

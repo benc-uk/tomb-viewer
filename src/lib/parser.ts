@@ -1,3 +1,8 @@
+// =============================================================================
+// Project: WebGL Tomb Raider
+// Main level parser, currently only supports TR1 levels
+// =============================================================================
+
 import * as t from './types'
 
 /**
@@ -12,11 +17,17 @@ export function parseLevel(dataArray: Uint8Array): t.tr1_level {
 
   const verMagic = data.getUint32(0, true)
 
+  // Check the version magic is even valid
+  if (!Object.values(t.tr_version).includes(verMagic)) {
+    throw new Error('Unknown version ' + verMagic + ', this file is not a valid TR level file.')
+  }
+
+  // Parse the level based on the version
   switch (verMagic) {
     case t.tr_version.TR1:
       return parseTR1Level(data)
     default:
-      throw new Error('Unknown version ' + verMagic + ', this file is not a valid TR level file.')
+      throw new Error('This version of Tomb Raider is not supported yet :(')
   }
 }
 
@@ -132,17 +143,28 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   // Parse mesh data, not this is the only place where a read ahead is needed
   // For numMeshPointers is needed if we wanted to parse the mesh data
-  const numMeshData = data.getUint32(offset, true)
+  const meshDataSize = data.getUint32(offset, true)
   offset += 4
-  // UNUSED: const meshDataOffset = offset;
-  offset += numMeshData * 2 // Skipped data
+
+  const meshOffsetStart = offset
+  offset += meshDataSize * 2
 
   // Parse mesh pointers
-  const numMeshPointers = data.getUint32(offset, true)
-  offset += 4
-  offset += numMeshPointers * 4 // Skipped data
+  level.numMeshPointers = data.getUint32(offset, true) // Already read so we don't need to read again
+  offset += 4 // But this time we do increment the offset to carry on reading
 
-  // Would read mesh data here from meshDataOffset, using numMeshPointers count
+  level.meshPointers = new Array<t.uint32_t>()
+  level.meshes = new Map<number, t.tr_mesh>()
+  for (let i = 0; i < level.numMeshPointers; i++) {
+    const meshPointer = data.getUint32(offset, true)
+    offset += 4
+    level.meshPointers.push(meshPointer)
+
+    const mesh = parseMesh(data, meshOffsetStart + meshPointer)
+    level.meshes.set(meshPointer, mesh)
+  }
+
+  console.log(`🕸️ Meshes parsed & loaded: ${level.meshes.size}`)
 
   const numAnimations = data.getUint32(offset, true)
   offset += 4
@@ -234,4 +256,73 @@ function parseTR1Level(data: DataView): t.tr1_level {
   level.palette = t.ParsePalette(data, offset)
 
   return level
+}
+
+function parseMesh(data: DataView, offset: number): t.tr_mesh {
+  const mesh = {} as t.tr_mesh
+
+  mesh.centre = t.ParseVertex(data, offset)
+  offset += t.tr_vertex_size
+
+  mesh.collRadius = data.getInt32(offset, true)
+  offset += 4
+
+  mesh.numVertices = data.getInt16(offset, true)
+  offset += 2
+  mesh.vertices = new Array<t.tr_vertex>()
+  for (let j = 0; j < mesh.numVertices; j++) {
+    mesh.vertices.push(t.ParseVertex(data, offset))
+    offset += t.tr_vertex_size
+  }
+
+  mesh.numNormals = data.getInt16(offset, true)
+  offset += 2
+  // Weirdness see https://opentomb.github.io/TRosettaStone3/trosettastone.html#_meshes
+  if (mesh.numNormals > 0) {
+    mesh.normals = new Array<t.tr_vertex>()
+    for (let j = 0; j < mesh.numNormals; j++) {
+      mesh.normals.push(t.ParseVertex(data, offset))
+      offset += t.tr_vertex_size
+    }
+  } else {
+    mesh.lights = new Array<t.int16_t>()
+    for (let j = 0; j < Math.abs(mesh.numNormals); j++) {
+      mesh.lights.push(data.getInt16(offset, true))
+      offset += 2
+    }
+  }
+
+  mesh.numTexturedRectangles = data.getInt16(offset, true)
+  offset += 2
+  mesh.texturedRectangles = new Array<t.tr_face4>()
+  for (let j = 0; j < mesh.numTexturedRectangles; j++) {
+    mesh.texturedRectangles[j] = t.ParseFace4(data, offset)
+    offset += t.tr_face4_size
+  }
+
+  mesh.numTexturedTriangles = data.getInt16(offset, true)
+  offset += 2
+  mesh.texturedTriangles = new Array<t.tr_face3>()
+  for (let j = 0; j < mesh.numTexturedTriangles; j++) {
+    mesh.texturedTriangles[j] = t.ParseFace3(data, offset)
+    offset += t.tr_face3_size
+  }
+
+  mesh.numColouredRectangles = data.getInt16(offset, true)
+  offset += 2
+  mesh.colouredRectangles = new Array<t.tr_face4>()
+  for (let j = 0; j < mesh.numColouredRectangles; j++) {
+    mesh.colouredRectangles[j] = t.ParseFace4(data, offset)
+    offset += t.tr_face4_size
+  }
+
+  mesh.numColouredTriangles = data.getInt16(offset, true)
+  offset += 2
+  mesh.colouredTriangles = new Array<t.tr_face3>()
+  for (let j = 0; j < mesh.numColouredTriangles; j++) {
+    mesh.colouredTriangles[j] = t.ParseFace3(data, offset)
+    offset += t.tr_face3_size
+  }
+
+  return mesh
 }

@@ -4,17 +4,17 @@
 // =============================================================================
 
 import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
-import { getLevelData } from './lib/file'
+import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
-import { isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16ToFloat } from './lib/types'
+import { bufferToCanvas, getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
+import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
-import { Category, isEntityInCategory, MagicSpriteLookup } from './lib/entity'
+import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
 
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
-  const data = await getLevelData(levelName)
+  const data = await getLevelFile(levelName)
   console.log('💽 Loading file: ' + levelName)
 
   // Kinda important! Parse the level data into a TR level data structure
@@ -39,6 +39,8 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   // Create all sprite materials
   const spriteMaterials = new Array<Material>()
+  let si = 0
+  document.getElementById('debug')!.innerHTML = ''
   for (const sprite of level.spriteTextures) {
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
@@ -47,6 +49,12 @@ export async function buildWorld(ctx: Context, levelName: string) {
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
+
+    // const div = document.createElement('div')
+    // const can = bufferToCanvas(buffer, w, h)
+    // div.innerHTML += `<div style="align-text:center">${si++}<div>`
+    // div.appendChild(can)
+    // document.getElementById('debug')!.appendChild(div)
   }
 
   // Needed to track alternate room pairs
@@ -223,7 +231,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
     const vert = [entity.x, entity.y, entity.z] as XYZ
 
     if (isEntityInCategory(entity, Category.PICKUP, level.version)) {
-      const spriteId = MagicSpriteLookup[level.version]?.get(entity.type) || 0
+      const spriteId = PickupSpriteLookup[level.version]?.get(entity.type) || 0
       vert[1] = -vert[1]
       vert[2] = -vert[2]
       createSpriteInst(vert, spriteId, level.spriteTextures, spriteMaterials, ctx)
@@ -233,17 +241,9 @@ export async function buildWorld(ctx: Context, levelName: string) {
   // Find the entity with ID type 0 this is Lara and the start point
   const lara = level.entities.find((e) => isEntityInCategory(e, Category.LARA, level.version))
   if (lara) {
-    ctx.camera.position = [lara.x, -lara.y + 512, -lara.z] as XYZ
+    ctx.camera.position = [lara.x, -lara.y + 768, -lara.z] as XYZ
 
-    let camAngle = 0
-    const angle = lara.angle
-    if (angle === 16384) {
-      camAngle = -Math.PI / 2
-    }
-    if (angle === -32768) {
-      camAngle = -Math.PI
-    }
-
+    const camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
     ctx.camera.enableFPControls(camAngle, -0.2, 0.002, config.speed)
   }
 
@@ -270,14 +270,18 @@ function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
   const aspect = spriteWorldH / spriteWorldW
-  let size = spriteWorldH * 0.9
+  let size = spriteWorldH * 0.58
 
   if (aspect < 1.0) {
     size = spriteWorldW
-    size *= 2
   }
 
   const spriteInst = ctx.createBillboardInstance(spriteMaterials[spriteId], size)
   spriteInst.scale = [1, aspect, 1]
   spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
+
+  // Hacks to fix vines and other sprites that hang from the ceiling
+  // if (spriteId === 147 || spriteId === 148) {
+  //   spriteInst.position[1] -= 2200
+  // }
 }

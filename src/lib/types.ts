@@ -1,8 +1,13 @@
 // =============================================================================
-// Basic types
+// Project: WebGL Tomb Raider
+// Core of the project, types and low level parsing functions for TR levels
 // =============================================================================
 
 import { XYZ } from 'gsots3d'
+
+// =============================================================================
+// Basic core types & conversion functions
+// =============================================================================
 
 export type uint8_t = number
 export type uint16_t = number
@@ -21,6 +26,10 @@ export function ufixed16ToFloat(ufixed: ufixed16) {
   const fraction = ufixed & 0xff
 
   return whole + fraction / 256
+}
+
+export function entityAngleToDeg(angle: int16_t) {
+  return (angle / 16384) * -90
 }
 
 export type tr_vertex = {
@@ -48,7 +57,7 @@ export type tr_face3 = {
   texture: uint16_t
 }
 
-export const tr_face3_size = 3 * 2 + 2
+export const tr_face3_size = 8
 
 export function ParseFace3(data: DataView, offset: number): tr_face3 {
   return {
@@ -62,7 +71,7 @@ export type tr_face4 = {
   texture: uint16_t
 }
 
-export const tr_face4_size = 4 * 2 + 2
+export const tr_face4_size = 10
 
 export function ParseFace4(data: DataView, offset: number): tr_face4 {
   return {
@@ -102,6 +111,11 @@ export type tr1_level = {
 
   numSpriteTextures: uint32_t
   spriteTextures: tr_sprite_texture[]
+
+  numMeshPointers: uint32_t
+  meshPointers: uint32_t[]
+  // Store in a map for easy access, the mesh pointers are the keys
+  meshes: Map<number, tr_mesh>
 
   palette: tr_palette
 }
@@ -292,25 +306,25 @@ export function isWaterRoom(room: tr_room) {
 
 export type tr_mesh = {
   centre: tr_vertex
-  collRadius: uint32_t
+  collRadius: int32_t
 
-  numVertices: uint16_t
+  numVertices: int16_t
   vertices: tr_vertex[]
 
-  numNormals: uint16_t
+  numNormals: int16_t
   normals: tr_vertex[]
-  lights: uint16_t[]
+  lights: int16_t[]
 
-  numTexturedRectangles: uint16_t
+  numTexturedRectangles: int16_t
   texturedRectangles: tr_face4[]
 
-  numTexturedTriangles: uint16_t
+  numTexturedTriangles: int16_t
   texturedTriangles: tr_face3[]
 
-  numColouredRectangles: uint16_t
+  numColouredRectangles: int16_t
   colouredRectangles: tr_face4[]
 
-  numColouredTriangles: uint16_t
+  numColouredTriangles: int16_t
   colouredTriangles: tr_face3[]
 }
 
@@ -319,7 +333,7 @@ export type tr_mesh = {
 // =============================================================================
 
 export type tr_entity = {
-  type: uint16_t
+  type: uint16_t //also known as "id"
   room: uint16_t
   x: int32_t
   y: int32_t

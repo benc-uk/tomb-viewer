@@ -47,3 +47,13 @@ export function bufferToImageData(buffer: ArrayBuffer, width: number, height: nu
   const imgData = new ImageData(new Uint8ClampedArray(buffer), width, height)
   return imgData
 }
+
+export function bufferToCanvas(buffer: ArrayBuffer, width: number, height: number) {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')!
+  const imgData = bufferToImageData(buffer, width, height)
+  ctx.putImageData(imgData, 0, 0)
+  return canvas
+}

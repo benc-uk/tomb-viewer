@@ -73,15 +73,22 @@ async function startApp() {
   // Load the level when the select changes
   document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'none'
-    buildWorld(ctx, (e.target as HTMLSelectElement).value).catch((err) => {
+
+    const level = (e.target as HTMLSelectElement).value
+    if (!level) return
+
+    console.clear()
+    buildWorld(ctx, level).catch((err) => {
       document.querySelector<HTMLDivElement>('#error')!.innerText = err
       document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+      document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
     })
   })
 
   buildWorld(ctx, config.startLevel ?? 'TR1/01-Caves.PHD').catch((err) => {
     document.querySelector<HTMLDivElement>('#error')!.innerText = err
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+    document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
   })
 
   setTimeout(() => {
