@@ -3,7 +3,7 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BillboardType, Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
+import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
 import { getLevelData } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
@@ -269,13 +269,12 @@ function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite
   const spriteTex = spriteTextures[spriteId]
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
+  const aspect = spriteWorldH / spriteWorldW
   let size = spriteWorldH * 0.9
-  let aspect = spriteWorldH / spriteWorldW
 
-  // Check aspect
-  if (spriteWorldW > spriteWorldH) {
+  if (aspect < 1.0) {
     size = spriteWorldW
-    size *= 1.2
+    size *= 2
   }
 
   const spriteInst = ctx.createBillboardInstance(spriteMaterials[spriteId], size)
