@@ -116,9 +116,13 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += 2
     room.numXSectors = data.getUint16(offset, true)
     offset += 2
-    offset += room.numZSectors * room.numXSectors * 8
+    room.sectorList = new Array<t.tr_room_sector>()
+    for (let j = 0; j < room.numZSectors * room.numXSectors; j++) {
+      room.sectorList.push(t.ParseRoomSector(data, offset))
+      offset += t.tr_room_sector_size
+    }
 
-    room.ambientIntensity = data.getUint16(offset, true)
+    room.ambientIntensity = data.getInt16(offset, true)
     offset += 2
 
     room.numLights = data.getUint16(offset, true)
@@ -131,7 +135,11 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
     room.numStaticMeshes = data.getUint16(offset, true)
     offset += 2
-    offset += room.numStaticMeshes * 18 // Skipped data
+    room.staticMeshes = new Array<t.tr_room_staticmesh>()
+    for (let j = 0; j < room.numStaticMeshes; j++) {
+      room.staticMeshes.push(t.ParseRoomStaticMesh(data, offset))
+      offset += t.tr_room_staticmesh_size
+    }
 
     room.alternateRoom = data.getInt16(offset, true)
     offset += 2
@@ -141,9 +149,13 @@ function parseTR1Level(data: DataView): t.tr1_level {
     level.rooms[i] = room
   }
 
-  const numFloorData = data.getUint32(offset, true)
+  level.numFloorData = data.getUint32(offset, true)
   offset += 4
-  offset += numFloorData * 2 // Skipped data
+  level.floorData = new Array<t.uint16_t>()
+  for (let i = 0; i < level.numFloorData; i++) {
+    level.floorData.push(data.getUint16(offset, true))
+    offset += 2
+  }
 
   // Parse mesh data, not this is the only place where a read ahead is needed
   // For numMeshPointers is needed if we wanted to parse the mesh data

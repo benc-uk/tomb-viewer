@@ -1,6 +1,8 @@
 // =============================================================================
 // Project: WebGL Tomb Raider
 // Core of the project, types and low level parsing functions for TR levels
+// Based ENTIRELY on the TRosettaStone3 documentation by OpenTomb
+// https://opentomb.github.io/TRosettaStone3/trosettastone.html
 // =============================================================================
 
 import { XYZ } from 'gsots3d'
@@ -117,6 +119,9 @@ export type tr1_level = {
   // Store in a map for easy access, the mesh pointers are the keys
   meshes: Map<number, tr_mesh>
 
+  numFloorData: uint32_t
+  floorData: uint16_t[]
+
   palette: tr_palette
 }
 
@@ -213,16 +218,23 @@ export function ParseObjectTextureVert(data: DataView, offset: number): tr_objec
 
 export type tr_room = {
   info: tr_room_info
+
   numDataWords: uint32_t // Size of tr_room_data
   roomData: tr_room_data
 
   numPortals: uint16_t
+
   numZSectors: uint16_t
   numXSectors: uint16_t
+  sectorList: tr_room_sector[]
+
   ambientIntensity: uint16_t
   numLights: uint16_t
   lights: tr_room_light[]
+
   numStaticMeshes: uint16_t
+  staticMeshes: tr_room_staticmesh[]
+
   alternateRoom: int16_t
   flags: int16_t
 }
@@ -299,6 +311,28 @@ export function ParseRoomSprite(data: DataView, offset: number): tr_room_sprite 
 
 export function isWaterRoom(room: tr_room) {
   return room.flags & 0x1
+}
+
+export type tr_room_staticmesh = {
+  x: int32_t
+  y: int32_t
+  z: int32_t
+  rotation: uint16_t
+  intensity: uint16_t
+  meshId: uint16_t
+}
+
+export const tr_room_staticmesh_size = 18
+
+export function ParseRoomStaticMesh(data: DataView, offset: number): tr_room_staticmesh {
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    rotation: data.getUint16(offset + 12, true),
+    intensity: data.getUint16(offset + 14, true),
+    meshId: data.getUint16(offset + 16, true),
+  } as tr_room_staticmesh
 }
 
 // =============================================================================
@@ -413,4 +447,30 @@ export function ParseRoomLight(data: DataView, offset: number): tr_room_light {
     intensity: data.getUint16(offset + 12, true),
     fade: data.getUint32(offset + 14, true),
   } as tr_room_light
+}
+
+// =============================================================================
+// Sector Data
+// =============================================================================
+
+export type tr_room_sector = {
+  fdIndex: uint16_t
+  boxIndex: uint16_t
+  roomBelow: uint8_t
+  floor: int8_t
+  roomAbove: uint8_t
+  ceiling: int8_t
+}
+
+export const tr_room_sector_size = 8
+
+export function ParseRoomSector(data: DataView, offset: number): tr_room_sector {
+  return {
+    fdIndex: data.getUint16(offset, true),
+    boxIndex: data.getUint16(offset + 2, true),
+    roomBelow: data.getUint8(offset + 4),
+    floor: data.getInt8(offset + 5),
+    roomAbove: data.getUint8(offset + 6),
+    ceiling: data.getInt8(offset + 7),
+  } as tr_room_sector
 }

@@ -220,10 +220,15 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
     // Add room lights
     for (const light of room.lights) {
-      const intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
+      const lightPos = [light.x, light.y, -light.z] as XYZ
+
+      let intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
       const fade = light.fade / 0x7fff
 
-      const lightPos = [light.x, light.y, -light.z] as XYZ
+      const roomAmb = room.ambientIntensity / 0x1fff // 0x1FFF is the max intensity
+      intense *= roomAmb
+      if (intense > 1) intense = 1
+
       const worldLight = ctx.createPointLight(lightPos, [intense, intense, intense])
       worldLight.metadata.fade = fade
 
@@ -240,7 +245,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
     roomInstances.get(pairs[0])!.enabled = false
   }
 
-  // Add entities to the world
+  // Add entities to the world, pickups
   for (const entity of level.entities) {
     const vert = [entity.x, entity.y, entity.z] as XYZ
 
@@ -268,7 +273,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   window.addEventListener('keydown', (e) => {
     // Swap toggle between all the alternate rooms
-    if (e.key === 'x') {
+    if (e.key === '1') {
       for (const pairs of altRoomPairs) {
         const room1 = roomInstances.get(pairs[0])!
         const room2 = roomInstances.get(pairs[1])!

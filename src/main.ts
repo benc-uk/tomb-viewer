@@ -10,7 +10,7 @@ import { buildWorld } from './builder'
 import { config, loadConfig } from './config'
 
 export let lightConst = 2.8
-export let lightQuad = 0.0000004
+export let lightQuad = 0.0000006
 
 // Starts everything, called once the config is loaded
 async function startApp() {
@@ -29,7 +29,7 @@ async function startApp() {
   ctx.camera.far = config.drawDistance
   ctx.camera.fov = config.fov
   ctx.gamma = config.gamma
-  ctx.globalLight.ambient = [0.1, 0.1, 0.1]
+  ctx.globalLight.ambient = [0.2, 0.2, 0.2]
   ctx.globalLight.enabled = false
 
   document.querySelector<HTMLInputElement>('#lightConst')!.value = '' + lightConst
