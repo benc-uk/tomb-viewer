@@ -50,7 +50,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
     // HACK: Make the sprite emissive to ignore lighting
     // - As they are only shaded in GSOTS by directional light which is disabled
-    mat.emissive = [0, 1, 1]
+    mat.emissive = [1, 1, 1]
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
   }
