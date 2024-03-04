@@ -123,7 +123,11 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
     room.numLights = data.getUint16(offset, true)
     offset += 2
-    offset += room.numLights * 18 // Skipped data
+    room.lights = new Array<t.tr_room_light>()
+    for (let j = 0; j < room.numLights; j++) {
+      room.lights.push(t.ParseRoomLight(data, offset))
+      offset += t.tr_room_light_size
+    }
 
     room.numStaticMeshes = data.getUint16(offset, true)
     offset += 2

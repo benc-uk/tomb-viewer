@@ -6,7 +6,7 @@
 import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { bufferToCanvas, getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
+import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16ToFloat } from './lib/types'
 import { config } from './config'
 import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
@@ -39,8 +39,6 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   // Create all sprite materials
   const spriteMaterials = new Array<Material>()
-  let si = 0
-  document.getElementById('debug')!.innerHTML = ''
   for (const sprite of level.spriteTextures) {
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
@@ -49,12 +47,6 @@ export async function buildWorld(ctx: Context, levelName: string) {
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
-
-    // const div = document.createElement('div')
-    // const can = bufferToCanvas(buffer, w, h)
-    // div.innerHTML += `<div style="align-text:center">${si++}<div>`
-    // div.appendChild(can)
-    // document.getElementById('debug')!.appendChild(div)
   }
 
   // Needed to track alternate room pairs
@@ -219,6 +211,21 @@ export async function buildWorld(ctx: Context, levelName: string) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
     }
+
+    // Add room lights
+    for (const light of room.lights) {
+      // You could tweak these values forever!
+      const intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
+      const fade = light.fade / 0x7fff
+
+      const lightPos = [light.x, light.y, -light.z] as XYZ
+      const worldLight = ctx.createPointLight(lightPos, [intense, intense, intense])
+      console.log('Light at', lightPos, 'intensity', light.intensity, intense, 'fade', fade)
+
+      worldLight.constant = 0.1 * fade
+      worldLight.linear = 0.0000007 * fade
+      worldLight.quad = 0.0000007 * fade
+    }
   }
 
   // Hide one half of alternate room pairs, doesn't matter which
@@ -280,8 +287,5 @@ function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite
   spriteInst.scale = [1, aspect, 1]
   spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
 
-  // Hacks to fix vines and other sprites that hang from the ceiling
-  // if (spriteId === 147 || spriteId === 148) {
-  //   spriteInst.position[1] -= 2200
-  // }
+  // TODO: Hacks to fix vines and other sprites that hang from the ceiling
 }

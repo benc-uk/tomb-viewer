@@ -27,34 +27,34 @@ async function startApp() {
   ctx.camera.fov = config.fov
   ctx.gamma = config.gamma
 
-  let globalLightAngle = 0
-  let globalLightHeight = 1
-  const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 10)
+  // const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 0)
+  // ctx.globalLight.setAsPosition(60000, 60000, 0)
+  ctx.globalLight.ambient = [0.01, 0.01, 0.01]
+  ctx.globalLight.enabled = false
 
   // Aargh point lights are so bad at this scale
-  camLight.quad = 0.000000000000000003
-  camLight.constant = 1
-  camLight.colour = [2, 2, 2]
+  // camLight.quad = 0.0000003
+  // camLight.constant = 0.3
+  // camLight.linear = 0.0000003
 
-  ctx.update = () => {
-    // A light that follows the camera
-    camLight.position = ctx.camera.position
-    ctx.globalLight.direction = [Math.cos(globalLightAngle), -globalLightHeight, Math.sin(globalLightAngle)]
-  }
+  // ctx.update = () => {
+  //   // A light that follows the camera
+  //   camLight.position = ctx.camera.position
+  // }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === '1') {
-      globalLightAngle += 0.1
-    }
-    if (e.key === '2') {
-      globalLightAngle -= 0.1
-    }
-    if (e.key === '3') {
-      globalLightHeight -= 0.03
-    }
-    if (e.key === '4') {
-      globalLightHeight += 0.03
-    }
+    // if (e.key === '1') {
+    //   globalLightAngle += 0.1
+    // }
+    // if (e.key === '2') {
+    //   globalLightAngle -= 0.1
+    // }
+    // if (e.key === '3') {
+    //   globalLightHeight -= 0.03
+    // }
+    // if (e.key === '4') {
+    //   globalLightHeight += 0.03
+    // }
     if (e.key === 'h') {
       document.querySelector<HTMLDivElement>('#help')!.style.display =
         document.querySelector<HTMLDivElement>('#help')!.style.display === 'none' ? 'block' : 'none'
@@ -65,9 +65,9 @@ async function startApp() {
       )
     }
 
-    if (globalLightHeight < 0.1) {
-      globalLightHeight = 0.1
-    }
+    // if (globalLightHeight < 0.1) {
+    //   globalLightHeight = 0.1
+    // }
   })
 
   // Load the level when the select changes
@@ -75,7 +75,9 @@ async function startApp() {
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'none'
 
     const level = (e.target as HTMLSelectElement).value
-    if (!level) return
+    if (!level) {
+      return
+    }
 
     console.clear()
     buildWorld(ctx, level).catch((err) => {
@@ -93,7 +95,7 @@ async function startApp() {
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3000)
+  }, 3)
 }
 
 // =============================================================================

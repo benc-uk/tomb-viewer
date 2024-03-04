@@ -221,6 +221,7 @@ export type tr_room = {
   numXSectors: uint16_t
   ambientIntensity: uint16_t
   numLights: uint16_t
+  lights: tr_room_light[]
   numStaticMeshes: uint16_t
   alternateRoom: int16_t
   flags: int16_t
@@ -333,7 +334,7 @@ export type tr_mesh = {
 // =============================================================================
 
 export type tr_entity = {
-  type: uint16_t //also known as "id"
+  type: uint16_t //Also known as "id"
   room: uint16_t
   x: int32_t
   y: int32_t
@@ -388,4 +389,28 @@ export function ParseSpriteTexture(data: DataView, offset: number): tr_sprite_te
     rightSide: data.getInt16(offset + 12, true),
     bottomSide: data.getInt16(offset + 14, true),
   } as tr_sprite_texture
+}
+
+// =============================================================================
+// Lighting
+// =============================================================================
+
+export type tr_room_light = {
+  x: int32_t
+  y: int32_t
+  z: int32_t
+  intensity: uint16_t
+  fade: uint32_t
+}
+
+export const tr_room_light_size = 18
+
+export function ParseRoomLight(data: DataView, offset: number): tr_room_light {
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    intensity: data.getUint16(offset + 12, true),
+    fade: data.getUint32(offset + 14, true),
+  } as tr_room_light
 }

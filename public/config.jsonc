@@ -1,6 +1,6 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 800,
+  "width": 1200,
   "aspectRatio": 0.75,
   // "aspectRatio": 0.5625,
 
@@ -11,10 +11,10 @@
   "fullWidth": true,
 
   // When stretching the canvas, this will turn smoothing on or off
-  "smoothScale": false,
+  "smoothScale": true,
 
   // Enable texture filtering
-  "textureFilter": false,
+  "textureFilter": true,
 
   // Camera settings
   "drawDistance": 80000,
@@ -23,5 +23,5 @@
 
   // Debug
   // "startLevel": "TR1/level1.phd",
-  // "startPos": [5885, -2304, -88238],
+  // "startPos": [81159, 1071, -26852],
 }
