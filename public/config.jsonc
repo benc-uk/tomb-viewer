@@ -1,6 +1,6 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 1200,
+  "width": 800,
   "aspectRatio": 0.75,
   // "aspectRatio": 0.5625,
 
@@ -14,7 +14,7 @@
   "smoothScale": true,
 
   // Enable texture filtering
-  "textureFilter": true,
+  "textureFilter": false,
 
   // Camera settings
   "drawDistance": 80000,
@@ -22,6 +22,6 @@
   "speed": 100,
 
   // Debug
-  // "startLevel": "TR1/level1.phd",
+  // "startLevel": "TR1/02-City-of-Vilcabamba.PHD",
   // "startPos": [81159, 1071, -26852],
 }

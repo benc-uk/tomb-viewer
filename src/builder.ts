@@ -11,6 +11,8 @@ import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16
 import { config } from './config'
 import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
 
+import { lightConst, lightQuad } from './main'
+
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
@@ -20,8 +22,9 @@ export async function buildWorld(ctx: Context, levelName: string) {
   // Kinda important! Parse the level data into a TR level data structure
   const level = parseLevel(data)
 
-  // Clear the world and texture cache for when we load a new level
+  // Clear the world, lights and texture cache for when we load a new level
   ctx.removeAllInstances()
+  ctx.lights = []
   TextureCache.clear()
 
   console.log(`✨ Loaded level OK, ${level.numRooms} rooms, ${level.numEntities} entities`)
@@ -45,6 +48,9 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
     const buffer = getRegionFromBuffer(buffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
+    // HACK: Make the sprite emissive to ignore lighting
+    // - As they are only shaded in GSOTS by directional light which is disabled
+    mat.emissive = [1, 1, 1]
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
   }
@@ -201,7 +207,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       // Water rooms are blue/green, need to clone the material
       if (isWaterRoom(room)) {
         const waterMat = materials[0].clone()
-        waterMat.diffuse = [0, 0.9, 0.8]
+        waterMat.diffuse = [0, 0.9, 0.8] // Make it look bluey-green
         roomInstance.material = waterMat
       }
 
@@ -214,19 +220,20 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
     // Add room lights
     for (const light of room.lights) {
-      // You could tweak these values forever!
       const intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
       const fade = light.fade / 0x7fff
 
       const lightPos = [light.x, light.y, -light.z] as XYZ
       const worldLight = ctx.createPointLight(lightPos, [intense, intense, intense])
-      console.log('Light at', lightPos, 'intensity', light.intensity, intense, 'fade', fade)
+      worldLight.metadata.fade = fade
 
-      worldLight.constant = 0.1 * fade
-      worldLight.linear = 0.0000007 * fade
-      worldLight.quad = 0.0000007 * fade
+      worldLight.constant = lightConst * fade
+      worldLight.quad = lightQuad * fade
+      worldLight.linear = 0
     }
   }
+
+  console.log(`🌟 Light count: ${ctx.lights.length}`)
 
   // Hide one half of alternate room pairs, doesn't matter which
   for (const pairs of altRoomPairs) {

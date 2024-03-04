@@ -9,6 +9,9 @@ import { Context } from 'gsots3d'
 import { buildWorld } from './builder'
 import { config, loadConfig } from './config'
 
+export let lightConst = 2.8
+export let lightQuad = 0.0000004
+
 // Starts everything, called once the config is loaded
 async function startApp() {
   let canvasStyle = ''
@@ -26,35 +29,39 @@ async function startApp() {
   ctx.camera.far = config.drawDistance
   ctx.camera.fov = config.fov
   ctx.gamma = config.gamma
-
-  // const camLight = ctx.createPointLight([0, 0, 0], [1, 1, 1], 0)
-  // ctx.globalLight.setAsPosition(60000, 60000, 0)
-  ctx.globalLight.ambient = [0.01, 0.01, 0.01]
+  ctx.globalLight.ambient = [0.1, 0.1, 0.1]
   ctx.globalLight.enabled = false
 
-  // Aargh point lights are so bad at this scale
-  // camLight.quad = 0.0000003
-  // camLight.constant = 0.3
-  // camLight.linear = 0.0000003
+  document.querySelector<HTMLInputElement>('#lightConst')!.value = '' + lightConst
+  document.querySelector<HTMLInputElement>('#lightConst')!.addEventListener('input', (e) => {
+    lightConst = parseFloat((e.target as HTMLInputElement).value)
+    for (const light of ctx.lights) {
+      light.constant = lightConst * <number>light.metadata.fade
+    }
+  })
 
-  // ctx.update = () => {
-  //   // A light that follows the camera
-  //   camLight.position = ctx.camera.position
-  // }
+  document.querySelector<HTMLInputElement>('#lightQuad')!.value = '' + lightQuad
+  document.querySelector<HTMLInputElement>('#lightQuad')!.addEventListener('input', (e) => {
+    lightQuad = parseFloat((e.target as HTMLInputElement).value)
+    for (const light of ctx.lights) {
+      light.quad = lightQuad * <number>light.metadata.fade
+    }
+  })
+
+  document.querySelector<HTMLInputElement>('#texFiltCheckbox')!.checked = config.textureFilter
+  document.querySelector<HTMLInputElement>('#texFiltCheckbox')!.addEventListener('change', (e) => {
+    config.textureFilter = (e.target as HTMLInputElement).checked
+
+    // Reload the level to apply the change
+    const level = document.querySelector<HTMLSelectElement>('#levelSelect')!.value
+    buildWorld(ctx, level).catch((err) => {
+      document.querySelector<HTMLDivElement>('#error')!.innerText = err
+      document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+      document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
+    })
+  })
 
   window.addEventListener('keydown', (e) => {
-    // if (e.key === '1') {
-    //   globalLightAngle += 0.1
-    // }
-    // if (e.key === '2') {
-    //   globalLightAngle -= 0.1
-    // }
-    // if (e.key === '3') {
-    //   globalLightHeight -= 0.03
-    // }
-    // if (e.key === '4') {
-    //   globalLightHeight += 0.03
-    // }
     if (e.key === 'h') {
       document.querySelector<HTMLDivElement>('#help')!.style.display =
         document.querySelector<HTMLDivElement>('#help')!.style.display === 'none' ? 'block' : 'none'
@@ -64,10 +71,6 @@ async function startApp() {
         'Position: ' + Math.round(ctx.camera.position[0]) + ', ' + Math.round(ctx.camera.position[1]) + ', ' + Math.round(ctx.camera.position[2])
       )
     }
-
-    // if (globalLightHeight < 0.1) {
-    //   globalLightHeight = 0.1
-    // }
   })
 
   // Load the level when the select changes
@@ -95,7 +98,7 @@ async function startApp() {
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3)
+  }, 3000)
 }
 
 // =============================================================================

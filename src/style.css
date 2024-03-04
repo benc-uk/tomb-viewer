@@ -3,7 +3,7 @@ body {
   padding: 0;
   box-sizing: border-box;
   background-color: #000000;
-  color: #fff;
+  color: #90aab3;
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
   overflow: hidden;
 }
@@ -17,10 +17,18 @@ select {
   margin: 0.8rem;
   font-size: 1.2rem;
   border-radius: 0.35rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  color: #90aab3;
+  border: none;
+  position: absolute;
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.8);
+}
+
+option {
   background-color: #26231b;
   color: #90aab3;
-  border: 1px solid #3a8c6e;
-  position: absolute;
 }
 
 canvas {
@@ -36,12 +44,13 @@ canvas {
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 0.5rem;
-  background-color: #26231b;
-  color: #90aab3;
-  border: 2px solid #3a8c6e;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.8);
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
   border-radius: 0.35rem;
   padding-right: 3rem;
+  cursor: pointer;
 }
 
 #error {
@@ -53,8 +62,36 @@ canvas {
   background-color: #26231b;
   color: #cc4319;
   border: 2px solid #3a8c6e;
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
   border-radius: 0.35rem;
   padding-right: 3rem;
   display: none;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0.2rem;
+}
+
+#controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0.5rem;
+  padding: 0.8rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 0.4rem;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+input[type='range'] {
+  width: 200px;
+}
+
+summary {
+  cursor: pointer;
 }
