@@ -210,9 +210,14 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
   offset += numModels * 18 // Skipped data
 
-  const numStaticMeshes = data.getUint32(offset, true)
+  level.numStaticMeshes = data.getUint32(offset, true)
   offset += 4
-  offset += numStaticMeshes * 32 // Skipped data
+  level.staticMeshes = new Array<t.tr_staticmesh>()
+  console.log(`🏗️ Static Meshes: ${level.numStaticMeshes}`)
+  for (let i = 0; i < level.numStaticMeshes; i++) {
+    level.staticMeshes.push(t.ParseStaticMesh(data, offset))
+    offset += t.tr_staticmesh_size
+  }
 
   level.numObjectTextures = data.getUint32(offset, true)
   offset += 4
@@ -274,6 +279,11 @@ function parseTR1Level(data: DataView): t.tr1_level {
   return level
 }
 
+/**
+ * Parses a mesh from the level file
+ * @param data DataView of the level file
+ * @param offset Offset into the mesh data block
+ */
 function parseMesh(data: DataView, offset: number): t.tr_mesh {
   const mesh = {} as t.tr_mesh
 

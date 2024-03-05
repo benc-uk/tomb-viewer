@@ -227,7 +227,9 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
       const roomAmb = room.ambientIntensity / 0x1fff // 0x1FFF is the max intensity
       intense *= roomAmb
-      if (intense > 1) intense = 1
+      if (intense > 1) {
+        intense = 1
+      }
 
       const worldLight = ctx.createPointLight(lightPos, [intense, intense, intense])
       worldLight.metadata.fade = fade
@@ -236,9 +238,50 @@ export async function buildWorld(ctx: Context, levelName: string) {
       worldLight.quad = lightQuad * fade
       worldLight.linear = 0
     }
+
+    // Add room static meshes
+    for (const roomStaticMesh of room.staticMeshes) {
+      const center = [roomStaticMesh.x, -roomStaticMesh.y, -roomStaticMesh.z] as XYZ
+      const staticMeshId = roomStaticMesh.meshId
+
+      // HACK: ALL THIS MIGHT BE WRONG!!!!
+      // Don't understand how room static meshes and other meshes work yet
+
+      // HACK: Find the mesh, weird we have to a find here, normally we have a index
+      const staticMesh = level.staticMeshes.find((m) => m.id === staticMeshId)
+      if (!staticMesh) {
+        console.error('Static mesh not found', staticMeshId)
+        continue
+      }
+
+      console.log('Static mesh', staticMesh)
+
+      // Now hop to the mesh via the mesh pointers
+      const meshId = staticMesh.mesh
+      const meshPointer = level.meshPointers[meshId]
+      const mesh = level.meshes.get(meshPointer)
+      if (!mesh) {
+        console.error('Mesh not found', meshId)
+        continue
+      }
+
+      const builder = new RenderableBuilder()
+      const part = builder.newPart('mesh' + meshId, Material.RED)
+      for (const rect of mesh.texturedRectangles) {
+        const v1 = trVertToXZY(mesh.vertices[rect.vertices[0]])
+        const v2 = trVertToXZY(mesh.vertices[rect.vertices[1]])
+        const v3 = trVertToXZY(mesh.vertices[rect.vertices[2]])
+        const v4 = trVertToXZY(mesh.vertices[rect.vertices[3]])
+
+        part.addQuad(v1, v4, v3, v2)
+      }
+
+      const instance = ctx.createCustomInstance(builder)
+      instance.position = center
+    }
   }
 
-  console.log(`🌟 Light count: ${ctx.lights.length}`)
+  // END: Room loop
 
   // Hide one half of alternate room pairs, doesn't matter which
   for (const pairs of altRoomPairs) {

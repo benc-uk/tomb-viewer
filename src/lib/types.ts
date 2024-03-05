@@ -82,6 +82,28 @@ export function ParseFace4(data: DataView, offset: number): tr_face4 {
   } as tr_face4
 }
 
+export type tr_bounding_box = {
+  minX: int16_t
+  minY: int16_t
+  minZ: int16_t
+  maxX: int16_t
+  maxY: int16_t
+  maxZ: int16_t
+}
+
+export const tr_bounding_box_size = 12
+
+export function ParseBoundingBox(data: DataView, offset: number): tr_bounding_box {
+  return {
+    minX: data.getInt16(offset, true),
+    minY: data.getInt16(offset + 2, true),
+    minZ: data.getInt16(offset + 4, true),
+    maxX: data.getInt16(offset + 6, true),
+    maxY: data.getInt16(offset + 8, true),
+    maxZ: data.getInt16(offset + 10, true),
+  } as tr_bounding_box
+}
+
 export enum tr_version {
   TR1 = 0x00000020,
   TR2 = 0x0000002d,
@@ -118,6 +140,8 @@ export type tr1_level = {
   meshPointers: uint32_t[]
   // Store in a map for easy access, the mesh pointers are the keys
   meshes: Map<number, tr_mesh>
+  numStaticMeshes: uint32_t
+  staticMeshes: tr_staticmesh[]
 
   numFloorData: uint32_t
   floorData: uint16_t[]
@@ -361,6 +385,26 @@ export type tr_mesh = {
 
   numColouredTriangles: int16_t
   colouredTriangles: tr_face3[]
+}
+
+export type tr_staticmesh = {
+  id: uint32_t // Used?
+  mesh: uint16_t // Index into the mesh pointers
+  visibilityBox: tr_bounding_box
+  collisionBox: tr_bounding_box
+  flags: uint16_t
+}
+
+export const tr_staticmesh_size = 32
+
+export function ParseStaticMesh(data: DataView, offset: number): tr_staticmesh {
+  return {
+    id: data.getUint32(offset, true),
+    mesh: data.getUint16(offset + 4, true),
+    visibilityBox: ParseBoundingBox(data, offset + 6),
+    collisionBox: ParseBoundingBox(data, offset + 18),
+    flags: data.getUint16(offset + 30, true),
+  } as tr_staticmesh
 }
 
 // =============================================================================
