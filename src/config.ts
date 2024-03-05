@@ -19,7 +19,6 @@ type AppConfig = {
   fov: number
   speed: number
 
-  startLevel: string
   startPos: XYZ
 
   showLights: boolean

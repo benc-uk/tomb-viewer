@@ -33,6 +33,25 @@ export const EntityDB: { [key in tr_version]?: Entity[] } = {
     { entityId: 11, name: 'Crocodile Water', category: Category.ENEMY },
     { entityId: 12, name: 'Lion Male', category: Category.ENEMY },
     { entityId: 13, name: 'Lion Female', category: Category.ENEMY },
+
+    { entityId: 53, name: 'Falling Ceiling', category: Category.TRAP },
+    { entityId: 54, name: 'Sword', category: Category.TRAP },
+    { entityId: 55, name: 'Wall Switch', category: Category.SWITCH },
+    { entityId: 56, name: 'Underwater Lever', category: Category.SWITCH },
+
+    { entityId: 57, name: 'Door 1', category: Category.DOOR },
+    { entityId: 58, name: 'Door 2', category: Category.DOOR },
+    { entityId: 59, name: 'Door 3', category: Category.DOOR },
+    { entityId: 60, name: 'Door 4', category: Category.DOOR },
+    { entityId: 61, name: 'Door 5', category: Category.DOOR },
+    { entityId: 62, name: 'Door 6', category: Category.DOOR },
+    { entityId: 63, name: 'Door 7', category: Category.DOOR },
+    { entityId: 64, name: 'Door 8', category: Category.DOOR },
+
+    { entityId: 68, name: 'Bridge flat', category: Category.SCENERY },
+    { entityId: 69, name: 'Bridge tilt 1', category: Category.SCENERY },
+    { entityId: 70, name: 'Bridge tilt 2', category: Category.SCENERY },
+
     { entityId: 84, name: 'Pistols', category: Category.PICKUP },
     { entityId: 85, name: 'Shotgun', category: Category.PICKUP },
     { entityId: 86, name: 'Magnums', category: Category.PICKUP },

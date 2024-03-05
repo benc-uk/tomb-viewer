@@ -143,6 +143,12 @@ export type tr1_level = {
   numStaticMeshes: uint32_t
   staticMeshes: tr_staticmesh[]
 
+  numModels: uint32_t
+  models: tr_model[]
+
+  numMeshTrees: uint32_t
+  meshTrees: tr_meshtree_node[]
+
   numFloorData: uint32_t
   floorData: uint16_t[]
 
@@ -405,6 +411,46 @@ export function ParseStaticMesh(data: DataView, offset: number): tr_staticmesh {
     collisionBox: ParseBoundingBox(data, offset + 18),
     flags: data.getUint16(offset + 30, true),
   } as tr_staticmesh
+}
+
+export type tr_model = {
+  id: uint32_t
+  numMeshes: uint16_t
+  startingMesh: uint16_t
+  meshTree: uint32_t
+  frameOffset: uint32_t
+  animation: uint16_t
+}
+
+export const tr_model_size = 18
+
+export function ParseModel(data: DataView, offset: number): tr_model {
+  return {
+    id: data.getUint32(offset, true),
+    numMeshes: data.getUint16(offset + 4, true),
+    startingMesh: data.getUint16(offset + 6, true),
+    meshTree: data.getUint32(offset + 8, true),
+    frameOffset: data.getUint32(offset + 12, true),
+    animation: data.getUint16(offset + 16, true),
+  } as tr_model
+}
+
+export type tr_meshtree_node = {
+  flags: uint8_t
+  offsetX: uint8_t
+  offsetY: uint8_t
+  offsetZ: uint8_t
+}
+
+export const tr_meshtree_node_size = 4
+
+export function ParseMeshTreeNode(data: DataView, offset: number): tr_meshtree_node {
+  return {
+    flags: data.getInt8(offset),
+    offsetX: data.getInt8(offset + 1),
+    offsetY: data.getInt8(offset + 2),
+    offsetZ: data.getInt8(offset + 3),
+  } as tr_meshtree_node
 }
 
 // =============================================================================

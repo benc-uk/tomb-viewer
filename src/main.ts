@@ -26,7 +26,7 @@ async function startApp() {
   ctx.camera.far = config.drawDistance
   ctx.camera.fov = config.fov
   ctx.gamma = config.gamma
-  ctx.globalLight.ambient = [0.1, 0.1, 0.1]
+  ctx.globalLight.ambient = [0.15, 0.15, 0.15]
   ctx.globalLight.enabled = false
 
   document.querySelector<HTMLInputElement>('#texFilt')!.checked = config.textureFilter

@@ -25,11 +25,10 @@
   "showLights": true,
   "lightConst": 2.8,
   "lightQuad": 0.0000005,
-  "lightBright": 0.7,
+  "lightBright": 1,
 
-  "distanceThreshold": 30000,
+  "distanceThreshold": 50000,
 
   // Debug
-  // "startLevel": "TR1/05-St-Francis-Folly.PHD",
-  // "startPos": [25190, 3843, -39307],
+  // "startPos": [21816, -4254, -55698],
 }

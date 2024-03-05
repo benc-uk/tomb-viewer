@@ -3,7 +3,7 @@ body {
   padding: 0;
   box-sizing: border-box;
   background-color: #000000;
-  color: #90aab3;
+  color: #b3cad1;
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
   overflow: hidden;
 }
@@ -39,18 +39,10 @@ canvas {
 }
 
 #help {
-  position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 0.5rem;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.8);
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
-  border-radius: 0.35rem;
-  padding-right: 3rem;
   cursor: pointer;
+  transform: translate(-50%, -50%);
 }
 
 #error {
@@ -58,14 +50,9 @@ canvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 0.5rem;
-  background-color: #26231b;
-  color: #cc4319;
-  border: 2px solid #3a8c6e;
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
-  border-radius: 0.35rem;
-  padding-right: 3rem;
   display: none;
+  color: orangered;
+  font-size: 2rem;
 }
 
 .flex-row {
@@ -76,16 +63,8 @@ canvas {
 }
 
 #controls {
-  position: absolute;
   top: 0;
   right: 0;
-  margin: 0.5rem;
-  padding: 0.8rem;
-  background-color: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border-radius: 0.4rem;
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
-  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.7);
 }
 
 input[type='range'] {
@@ -94,4 +73,15 @@ input[type='range'] {
 
 summary {
   cursor: pointer;
+}
+
+.blurbox {
+  position: absolute;
+  margin: 0.5rem;
+  padding: 0.8rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 0.4rem;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.7);
 }
