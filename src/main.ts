@@ -9,9 +9,6 @@ import { Context } from 'gsots3d'
 import { buildWorld } from './builder'
 import { config, loadConfig } from './config'
 
-export let lightConst = 2.8
-export let lightQuad = 0.0000006
-
 // Starts everything, called once the config is loaded
 async function startApp() {
   let canvasStyle = ''
@@ -29,28 +26,24 @@ async function startApp() {
   ctx.camera.far = config.drawDistance
   ctx.camera.fov = config.fov
   ctx.gamma = config.gamma
-  ctx.globalLight.ambient = [0.2, 0.2, 0.2]
+  ctx.globalLight.ambient = [0.1, 0.1, 0.1]
   ctx.globalLight.enabled = false
 
-  document.querySelector<HTMLInputElement>('#lightConst')!.value = '' + lightConst
-  document.querySelector<HTMLInputElement>('#lightConst')!.addEventListener('input', (e) => {
-    lightConst = parseFloat((e.target as HTMLInputElement).value)
-    for (const light of ctx.lights) {
-      light.constant = lightConst * <number>light.metadata.fade
-    }
-  })
-
-  document.querySelector<HTMLInputElement>('#lightQuad')!.value = '' + lightQuad
-  document.querySelector<HTMLInputElement>('#lightQuad')!.addEventListener('input', (e) => {
-    lightQuad = parseFloat((e.target as HTMLInputElement).value)
-    for (const light of ctx.lights) {
-      light.quad = lightQuad * <number>light.metadata.fade
-    }
-  })
-
-  document.querySelector<HTMLInputElement>('#texFiltCheckbox')!.checked = config.textureFilter
-  document.querySelector<HTMLInputElement>('#texFiltCheckbox')!.addEventListener('change', (e) => {
+  document.querySelector<HTMLInputElement>('#texFilt')!.checked = config.textureFilter
+  document.querySelector<HTMLInputElement>('#texFilt')!.addEventListener('change', (e) => {
     config.textureFilter = (e.target as HTMLInputElement).checked
+
+    // Reload the level to apply the change
+    const level = document.querySelector<HTMLSelectElement>('#levelSelect')!.value
+    buildWorld(ctx, level).catch((err) => {
+      document.querySelector<HTMLDivElement>('#error')!.innerText = err
+      document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
+      document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
+    })
+  })
+  document.querySelector<HTMLInputElement>('#showLights')!.checked = config.showLights
+  document.querySelector<HTMLInputElement>('#showLights')!.addEventListener('change', (e) => {
+    config.showLights = (e.target as HTMLInputElement).checked
 
     // Reload the level to apply the change
     const level = document.querySelector<HTMLSelectElement>('#levelSelect')!.value
@@ -66,6 +59,7 @@ async function startApp() {
       document.querySelector<HTMLDivElement>('#help')!.style.display =
         document.querySelector<HTMLDivElement>('#help')!.style.display === 'none' ? 'block' : 'none'
     }
+
     if (e.key === 'p') {
       console.log(
         'Position: ' + Math.round(ctx.camera.position[0]) + ', ' + Math.round(ctx.camera.position[1]) + ', ' + Math.round(ctx.camera.position[2])
@@ -90,6 +84,7 @@ async function startApp() {
     })
   })
 
+  // START HERE!
   buildWorld(ctx, config.startLevel ?? 'TR1/01-Caves.PHD').catch((err) => {
     document.querySelector<HTMLDivElement>('#error')!.innerText = err
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'

@@ -9,15 +9,24 @@ import JSON5 from 'json5'
 type AppConfig = {
   width: number
   aspectRatio: number
+
   gamma: number
   fullWidth: boolean
   smoothScale: boolean
   textureFilter: boolean
+
   drawDistance: number
   fov: number
+  speed: number
+
   startLevel: string
   startPos: XYZ
-  speed: number
+
+  showLights: boolean
+
+  lightConst: number
+  lightQuad: number
+  lightBright: number
 }
 
 // Global and exported config

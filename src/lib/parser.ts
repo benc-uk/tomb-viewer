@@ -213,7 +213,6 @@ function parseTR1Level(data: DataView): t.tr1_level {
   level.numStaticMeshes = data.getUint32(offset, true)
   offset += 4
   level.staticMeshes = new Array<t.tr_staticmesh>()
-  console.log(`🏗️ Static Meshes: ${level.numStaticMeshes}`)
   for (let i = 0; i < level.numStaticMeshes; i++) {
     level.staticMeshes.push(t.ParseStaticMesh(data, offset))
     offset += t.tr_staticmesh_size

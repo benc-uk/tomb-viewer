@@ -10,7 +10,7 @@ export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.r
     'no-var': 'error',
     'dot-notation': 'error',
     eqeqeq: 'error',
-    'capitalized-comments': 'error',
+    // 'capitalized-comments': 'error',
     curly: 'error',
     'no-global-assign': 'error',
     'no-implicit-globals': 'error',

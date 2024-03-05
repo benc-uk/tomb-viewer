@@ -21,7 +21,13 @@
   "fov": 70,
   "speed": 100,
 
+  // Lighting settings
+  "showLights": true,
+  "lightConst": 2.8,
+  "lightQuad": 0.0000005,
+  "lightBright": 0.7,
+
   // Debug
-  // "startLevel": "TR1/02-City-of-Vilcabamba.PHD",
-  // "startPos": [81159, 1071, -26852],
+  // "startLevel": "TR1/05-St-Francis-Folly.PHD",
+  // "startPos": [25190, 3843, -39307],
 }

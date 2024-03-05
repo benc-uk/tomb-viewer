@@ -388,7 +388,7 @@ export type tr_mesh = {
 }
 
 export type tr_staticmesh = {
-  id: uint32_t // Used?
+  id: uint32_t
   mesh: uint16_t // Index into the mesh pointers
   visibilityBox: tr_bounding_box
   collisionBox: tr_bounding_box

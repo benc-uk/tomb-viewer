@@ -11,8 +11,6 @@ import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_sprite_texture, ufixed16
 import { config } from './config'
 import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
 
-import { lightConst, lightQuad } from './main'
-
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
@@ -26,6 +24,10 @@ export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
   ctx.lights = []
   TextureCache.clear()
+
+  const lightMat = Material.createSolidColour(1, 1, 1)
+  lightMat.emissive = [1, 1, 1]
+  const tempMat = Material.createSolidColour(0.2, 0.2, 0.2)
 
   console.log(`✨ Loaded level OK, ${level.numRooms} rooms, ${level.numEntities} entities`)
 
@@ -220,23 +222,28 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
     // Add room lights
     for (const light of room.lights) {
-      const lightPos = [light.x, light.y, -light.z] as XYZ
+      const lightPos = [light.x, -light.y, -light.z] as XYZ
 
       let intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
       const fade = light.fade / 0x7fff
 
-      const roomAmb = room.ambientIntensity / 0x1fff // 0x1FFF is the max intensity
-      intense *= roomAmb
-      if (intense > 1) {
-        intense = 1
-      }
+      // const roomAmb = room.ambientIntensity / 0x1fff // 0x1FFF is the max intensity
+      // intense *= roomAmb
+      // if (intense > 1) {
+      //   intense = 1
+      // }
+
+      intense *= config.lightBright
 
       const worldLight = ctx.createPointLight(lightPos, [intense, intense, intense])
-      worldLight.metadata.fade = fade
-
-      worldLight.constant = lightConst * fade
-      worldLight.quad = lightQuad * fade
+      worldLight.constant = config.lightConst * fade
+      worldLight.quad = config.lightQuad * fade
       worldLight.linear = 0
+
+      if (config.showLights) {
+        const lightSphere = ctx.createSphereInstance(lightMat, 60)
+        lightSphere.position = lightPos
+      }
     }
 
     // Add room static meshes
@@ -254,8 +261,6 @@ export async function buildWorld(ctx: Context, levelName: string) {
         continue
       }
 
-      console.log('Static mesh', staticMesh)
-
       // Now hop to the mesh via the mesh pointers
       const meshId = staticMesh.mesh
       const meshPointer = level.meshPointers[meshId]
@@ -266,7 +271,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       }
 
       const builder = new RenderableBuilder()
-      const part = builder.newPart('mesh' + meshId, Material.RED)
+      const part = builder.newPart('mesh' + meshId, tempMat)
       for (const rect of mesh.texturedRectangles) {
         const v1 = trVertToXZY(mesh.vertices[rect.vertices[0]])
         const v2 = trVertToXZY(mesh.vertices[rect.vertices[1]])
@@ -276,8 +281,17 @@ export async function buildWorld(ctx: Context, levelName: string) {
         part.addQuad(v1, v4, v3, v2)
       }
 
+      for (const tri of mesh.texturedTriangles) {
+        const v1 = trVertToXZY(mesh.vertices[tri.vertices[0]])
+        const v2 = trVertToXZY(mesh.vertices[tri.vertices[1]])
+        const v3 = trVertToXZY(mesh.vertices[tri.vertices[2]])
+
+        part.addTriangle(v1, v3, v2)
+      }
+
       const instance = ctx.createCustomInstance(builder)
       instance.position = center
+      instance.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
     }
   }
 
