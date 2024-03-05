@@ -3,7 +3,7 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { Context, Instance, Material, RenderableBuilder, TextureCache, XYZ } from 'gsots3d'
+import { Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
@@ -57,6 +57,30 @@ export async function buildWorld(ctx: Context, levelName: string) {
     spriteMaterials.push(mat)
   }
 
+  // Create all models for meshes
+  for (const [meshId, mesh] of level.meshes) {
+    const builder = new ModelBuilder()
+    const part = builder.newPart('mesh' + meshId, tempMat)
+    for (const rect of mesh.texturedRectangles) {
+      const v1 = trVertToXZY(mesh.vertices[rect.vertices[0]])
+      const v2 = trVertToXZY(mesh.vertices[rect.vertices[1]])
+      const v3 = trVertToXZY(mesh.vertices[rect.vertices[2]])
+      const v4 = trVertToXZY(mesh.vertices[rect.vertices[3]])
+
+      part.addQuad(v1, v4, v3, v2)
+    }
+
+    for (const tri of mesh.texturedTriangles) {
+      const v1 = trVertToXZY(mesh.vertices[tri.vertices[0]])
+      const v2 = trVertToXZY(mesh.vertices[tri.vertices[1]])
+      const v3 = trVertToXZY(mesh.vertices[tri.vertices[2]])
+
+      part.addTriangle(v1, v3, v2)
+    }
+
+    ctx.buildCustomModel(builder, `mesh_${meshId}`)
+  }
+
   // Needed to track alternate room pairs
   const altRoomPairs: Array<[number, number]> = []
 
@@ -72,7 +96,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       altRoomPairs.push([roomNum, room.alternateRoom])
     }
 
-    const builder = new RenderableBuilder()
+    const builder = new ModelBuilder()
 
     // Add a part to the room, one for each textile
     // This is part of the trick to get the right texture on the right part
@@ -202,8 +226,8 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
     // Build the room and add it to the world
     try {
-      const roomInstance = ctx.createCustomInstance(builder)
-      // We hope the order is
+      ctx.buildCustomModel(builder, `room_${roomNum}`)
+      const roomInstance = ctx.createModelInstance(`room_${roomNum}`)
       roomInstances.set(roomNum, roomInstance)
 
       // Water rooms are blue/green, need to clone the material
@@ -215,6 +239,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
       // Room info struct hold room offsets into the world
       roomInstance.position = [room.info.x, 0, -room.info.z]
+      roomInstance.enabled = false
     } catch (e) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
@@ -264,32 +289,8 @@ export async function buildWorld(ctx: Context, levelName: string) {
       // Now hop to the mesh via the mesh pointers
       const meshId = staticMesh.mesh
       const meshPointer = level.meshPointers[meshId]
-      const mesh = level.meshes.get(meshPointer)
-      if (!mesh) {
-        console.error('Mesh not found', meshId)
-        continue
-      }
 
-      const builder = new RenderableBuilder()
-      const part = builder.newPart('mesh' + meshId, tempMat)
-      for (const rect of mesh.texturedRectangles) {
-        const v1 = trVertToXZY(mesh.vertices[rect.vertices[0]])
-        const v2 = trVertToXZY(mesh.vertices[rect.vertices[1]])
-        const v3 = trVertToXZY(mesh.vertices[rect.vertices[2]])
-        const v4 = trVertToXZY(mesh.vertices[rect.vertices[3]])
-
-        part.addQuad(v1, v4, v3, v2)
-      }
-
-      for (const tri of mesh.texturedTriangles) {
-        const v1 = trVertToXZY(mesh.vertices[tri.vertices[0]])
-        const v2 = trVertToXZY(mesh.vertices[tri.vertices[1]])
-        const v3 = trVertToXZY(mesh.vertices[tri.vertices[2]])
-
-        part.addTriangle(v1, v3, v2)
-      }
-
-      const instance = ctx.createCustomInstance(builder)
+      const instance = ctx.createModelInstance(`mesh_${meshPointer}`)
       instance.position = center
       instance.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
     }
@@ -299,7 +300,8 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   // Hide one half of alternate room pairs, doesn't matter which
   for (const pairs of altRoomPairs) {
-    roomInstances.get(pairs[0])!.enabled = false
+    roomInstances.get(pairs[0])!.metadata.flipped = false
+    roomInstances.get(pairs[1])!.metadata.flipped = true
   }
 
   // Add entities to the world, pickups
@@ -334,11 +336,32 @@ export async function buildWorld(ctx: Context, levelName: string) {
       for (const pairs of altRoomPairs) {
         const room1 = roomInstances.get(pairs[0])!
         const room2 = roomInstances.get(pairs[1])!
-        room1.enabled = !room1.enabled
-        room2.enabled = !room2.enabled
+        room1.metadata.flipped = !room1.metadata.flipped
+        room2.metadata.flipped = !room2.metadata.flipped
       }
     }
   })
+
+  ctx.update = () => {
+    if (Stats.frameCount % 30 === 0) {
+      // Find the rooms closest to the camera
+      const camPos = ctx.camera.position
+      const distThreshold = config.distanceThreshold
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for (const [_, room] of roomInstances) {
+        const dist = Math.abs(room.position[0] - camPos[0]) + Math.abs(room.position[2] - camPos[2])
+        if (dist < distThreshold) {
+          room.enabled = true
+        } else {
+          room.enabled = false
+        }
+
+        if (room.metadata.flipped) {
+          room.enabled = false
+        }
+      }
+    }
+  }
 }
 
 function createSpriteInst(

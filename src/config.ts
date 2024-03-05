@@ -27,6 +27,8 @@ type AppConfig = {
   lightConst: number
   lightQuad: number
   lightBright: number
+
+  distanceThreshold: number
 }
 
 // Global and exported config

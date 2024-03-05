@@ -93,7 +93,11 @@ async function startApp() {
   })
 
   // On load read hash
-  const level = window.location.hash.slice(1)
+  let level = window.location.hash.slice(1)
+  if (!level) {
+    window.location.hash = 'TR1/01-Caves.PHD'
+    level = 'TR1/01-Caves.PHD'
+  }
   document.querySelector<HTMLSelectElement>('#levelSelect')!.value = level
   buildWorld(ctx, level).catch((err) => {
     document.querySelector<HTMLDivElement>('#error')!.innerText = err

@@ -27,6 +27,8 @@
   "lightQuad": 0.0000005,
   "lightBright": 0.7,
 
+  "distanceThreshold": 30000,
+
   // Debug
   // "startLevel": "TR1/05-St-Francis-Folly.PHD",
   // "startPos": [25190, 3843, -39307],
