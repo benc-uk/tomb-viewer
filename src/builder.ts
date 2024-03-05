@@ -197,7 +197,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
       vert[0] += room.info.x
       vert[2] -= room.info.z
-      createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx)
+      createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx, levelName)
     }
 
     // Build the room and add it to the world
@@ -341,7 +341,14 @@ export async function buildWorld(ctx: Context, levelName: string) {
   })
 }
 
-function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite_texture[], spriteMaterials: Material[], ctx: Context) {
+function createSpriteInst(
+  vert: XYZ,
+  spriteId: number,
+  spriteTextures: tr_sprite_texture[],
+  spriteMaterials: Material[],
+  ctx: Context,
+  levelName?: string
+) {
   const spriteTex = spriteTextures[spriteId]
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
@@ -357,4 +364,7 @@ function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: tr_sprite
   spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
 
   // TODO: Hacks to fix vines and other sprites that hang from the ceiling
+  if (levelName === 'TR1/01-Caves.PHD' && spriteId === 175) {
+    spriteInst.position[1] -= 3056
+  }
 }

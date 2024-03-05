@@ -76,7 +76,15 @@ async function startApp() {
       return
     }
 
-    console.clear()
+    window.location.hash = level
+  })
+
+  setTimeout(() => {
+    document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
+  }, 3000)
+
+  window.addEventListener('hashchange', () => {
+    const level = window.location.hash.slice(1)
     buildWorld(ctx, level).catch((err) => {
       document.querySelector<HTMLDivElement>('#error')!.innerText = err
       document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
@@ -84,16 +92,14 @@ async function startApp() {
     })
   })
 
-  // START HERE!
-  buildWorld(ctx, config.startLevel ?? 'TR1/01-Caves.PHD').catch((err) => {
+  // On load read hash
+  const level = window.location.hash.slice(1)
+  document.querySelector<HTMLSelectElement>('#levelSelect')!.value = level
+  buildWorld(ctx, level).catch((err) => {
     document.querySelector<HTMLDivElement>('#error')!.innerText = err
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
   })
-
-  setTimeout(() => {
-    document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3000)
 }
 
 // =============================================================================
