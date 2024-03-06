@@ -16,10 +16,15 @@
         <summary>⚙️</summary>
         <div class="flex-row">
           <input type="checkbox" id="texFilt" />
-          <label for="texFilt">Texture Filtering</label>
+          <label for="texFilt"> Texture Filtering</label>
         </div>
       </details>
     </div>
+
+    <div id="stats" class="blurbox">
+      <pre id="statsInner"></pre>
+    </div>
+
     <main>
       <select id="levelSelect">
         <option value="TR1/01-Caves.PHD">01 Caves</option>
@@ -46,6 +51,7 @@
       </select>
 
       <canvas id="canvas"></canvas>
+
       <div id="error" class="blurbox"></div>
 
       <div id="help" onclick="this.style.display='none'" class="blurbox">

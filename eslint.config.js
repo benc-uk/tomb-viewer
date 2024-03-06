@@ -16,5 +16,11 @@ export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.r
     'no-implicit-globals': 'error',
     'no-with': 'error',
     '@typescript-eslint/no-duplicate-enum-values': 'off',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        destructuredArrayIgnorePattern: '^_',
+      },
+    ],
   },
 })

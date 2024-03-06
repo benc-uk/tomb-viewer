@@ -3,13 +3,14 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ } from 'gsots3d'
+import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_mesh, tr_sprite_texture, ufixed16ToFloat, tr1_level } from './lib/types'
 import { config } from './config'
 import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
+import { Model } from 'gsots3d'
 
 export async function buildWorld(ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -32,25 +33,26 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   // Create all materials one for each tex-tile
   const materials = new Array<Material>()
-  const buffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
   const spriteMaterials = new Array<Material>()
+  const tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
 
+  // Gather all the textiles (texture tiles) into materials and usable texture maps
   for (const textile of level.textiles) {
     const buffer = textile8ToBuffer(textile, level.palette)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
     mat.alphaCutoff = 0.5 // Makes transparent textures work
     materials.push(mat)
-    buffers.push(buffer)
+    tileBuffers.push(buffer)
   }
 
   // Create all sprite materials
-
   for (const sprite of level.spriteTextures) {
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
 
-    const buffer = getRegionFromBuffer(buffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
+    const buffer = getRegionFromBuffer(tileBuffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
+
     // HACK: Make the sprite emissive to ignore lighting
     // - As they are only shaded in GSOTS by directional light which is disabled
     mat.emissive = [1, 1, 1]
@@ -63,19 +65,21 @@ export async function buildWorld(ctx: Context, levelName: string) {
     buildMesh(mesh, meshId, level, ctx, materials)
   }
 
-  // Needed to track alternate room pairs
-  const altRoomPairs: Array<[number, number]> = []
-
-  // Map of room number to instance for easy retrieval
-  const roomInstances = new Map<number, Instance>()
+  // Nodes to hold the rooms + sprites, static meshes
+  // Meta data is used to store alternate room info and state
+  const roomNodes = new Map<number, Node>()
 
   // Core loop - build all room geometry
   for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
     const room = level.rooms[roomNum]
 
+    const roomNode = new Node()
+    roomNodes.set(roomNum, roomNode)
+    roomNode.position = [room.info.x, 0, -room.info.z]
+
     // Find the alternate room pairs
     if (room.alternateRoom !== -1) {
-      altRoomPairs.push([roomNum, room.alternateRoom])
+      roomNode.metadata.altRoom = room.alternateRoom
     }
 
     const builder = new ModelBuilder()
@@ -201,18 +205,21 @@ export async function buildWorld(ctx: Context, levelName: string) {
     try {
       ctx.buildCustomModel(builder, `room_${roomNum}`)
       const roomInstance = ctx.createModelInstance(`room_${roomNum}`)
-      roomInstances.set(roomNum, roomInstance)
+      const boundBox = (roomInstance.renderable as Model).boundingBox
+
+      // find center of the room bounds, whcih is 6 values for min and max XYZ
+      const center = [(boundBox[0] + boundBox[3]) / 2, (boundBox[1] + boundBox[4]) / 2, (boundBox[2] + boundBox[5]) / 2]
+
+      roomNode.metadata.centerX = center[0] + room.info.x
+      roomNode.metadata.centerY = center[1]
+      roomNode.metadata.centerZ = center[2] - room.info.z
 
       // Water rooms are blue/green, use uniformOverrides to do this
       if (isWaterRoom(room)) {
         roomInstance.uniformOverrides = { 'u_mat.diffuse': [0, 0.9, 0.8] }
       }
 
-      // Room info struct hold room offsets into the world
-      roomInstance.position = [room.info.x, 0, -room.info.z]
-      roomInstance.enabled = false
-      // const roomAmb = room.ambientIntensity / 13000
-      // roomInstance.uniformOverrides = { 'u_mat.ambient': [roomAmb, roomAmb, roomAmb] }
+      roomNode.addChild(roomInstance)
     } catch (e) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
@@ -238,15 +245,12 @@ export async function buildWorld(ctx: Context, levelName: string) {
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
-      vert[0] += room.info.x
-      vert[2] -= room.info.z
-      createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx, levelName)
+      const spriteInst = createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx, levelName)
+      roomNode.addChild(spriteInst)
     }
 
     // Add room static meshes
     for (const roomStaticMesh of room.staticMeshes) {
-      const center = [roomStaticMesh.x, -roomStaticMesh.y, -roomStaticMesh.z] as XYZ
-
       // Find the staticMesh, *weird* we have to do a search here, normally IDs are array indexes
       const staticMesh = level.staticMeshes.find((m) => m.id === roomStaticMesh.meshId)
       if (!staticMesh) {
@@ -257,18 +261,24 @@ export async function buildWorld(ctx: Context, levelName: string) {
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
 
-      const instance = ctx.createModelInstance(`mesh_${meshPointer}`)
-      instance.position = center
-      instance.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
+      const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
+
+      // We have move the mesh to the room position with the reverse of the room position
+      meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
+      meshInst.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
+      roomNode.addChild(meshInst)
     }
+
+    roomNode.enabled = false
   }
 
   // END: Room loop
 
-  // Hide one half of alternate room pairs, doesn't matter which
-  for (const pairs of altRoomPairs) {
-    roomInstances.get(pairs[0])!.metadata.flipped = false
-    roomInstances.get(pairs[1])!.metadata.flipped = true
+  // Hide alternate rooms
+  for (const [_, roomNode] of roomNodes) {
+    if (roomNode.metadata.altRoom) {
+      roomNodes.get(roomNode.metadata.altRoom as number)!.metadata.flipped = true
+    }
   }
 
   // Add entities to the world
@@ -316,36 +326,49 @@ export async function buildWorld(ctx: Context, levelName: string) {
   }
 
   window.addEventListener('keydown', (e) => {
-    // Swap toggle between all the alternate rooms
-    if (e.key === '1') {
-      for (const pairs of altRoomPairs) {
-        const room1 = roomInstances.get(pairs[0])!
-        const room2 = roomInstances.get(pairs[1])!
-        room1.metadata.flipped = !room1.metadata.flipped
-        room2.metadata.flipped = !room2.metadata.flipped
+    if (e.key === ' ') {
+      // Find all the the alternate rooms and flip visibility
+      for (const [_, node] of roomNodes) {
+        if (node.metadata.altRoom) {
+          const altRoom = roomNodes.get(node.metadata.altRoom as number)
+          if (!altRoom) {
+            return
+          }
+          altRoom.metadata.flipped = !altRoom.metadata.flipped
+          node.metadata.flipped = !node.metadata.flipped
+        }
       }
     }
   })
 
   ctx.update = () => {
-    if (Stats.frameCount % 30 === 0) {
+    if (Stats.frameCount % 20 === 0) {
       // Find the rooms closest to the camera
-      const camPos = ctx.camera.position
-      const distThreshold = config.distanceThreshold
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for (const [_, room] of roomInstances) {
-        const dist = Math.abs(room.position[0] - camPos[0]) + Math.abs(room.position[2] - camPos[2])
-        if (dist < distThreshold) {
-          room.enabled = true
-        } else {
-          room.enabled = false
+      const camPos = ctx.camera.getFrustumCenter(0.3)
+
+      for (const [_, node] of roomNodes) {
+        // Hide flipped rooms, needed for alternate rooms
+        if (node.metadata.flipped) {
+          node.enabled = false
+          continue
         }
 
-        if (room.metadata.flipped) {
-          room.enabled = false
+        const roomCenter = [node.metadata.centerX, node.metadata.centerY, node.metadata.centerZ] as XYZ
+
+        const dist = Math.abs(camPos[0] - roomCenter[0]) + Math.abs(camPos[1] - roomCenter[1]) + Math.abs(camPos[2] - roomCenter[2])
+        if (dist < config.distanceThreshold) {
+          node.enabled = true
+        } else {
+          node.enabled = false
         }
       }
     }
+
+    document.querySelector<HTMLDivElement>('#statsInner')!.innerText = `FPS:   ${Stats.FPS}
+Draws: ${Stats.drawCallsPerFrame}
+Inst:  ${Stats.instances}
+Tris:  ${Stats.triangles}
+Time:  ${Stats.totalTime.toFixed(2)}`
   }
 }
 
@@ -356,7 +379,7 @@ function createSpriteInst(
   spriteMaterials: Material[],
   ctx: Context,
   levelName?: string
-) {
+): Instance {
   const spriteTex = spriteTextures[spriteId]
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
@@ -375,6 +398,8 @@ function createSpriteInst(
   if (levelName === 'TR1/01-Caves.PHD' && spriteId === 175) {
     spriteInst.position[1] -= 3056
   }
+
+  return spriteInst
 }
 
 function buildMesh(mesh: tr_mesh, meshId: number, level: tr1_level, ctx: Context, materials: Material[]) {

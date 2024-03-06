@@ -57,13 +57,7 @@ async function startApp() {
 
   // Load the level when the select changes
   document.querySelector('#levelSelect')!.addEventListener('change', async (e) => {
-    document.querySelector<HTMLDivElement>('#error')!.style.display = 'none'
-
     const level = (e.target as HTMLSelectElement).value
-    if (!level) {
-      return
-    }
-
     window.location.hash = level
   })
 
@@ -71,22 +65,24 @@ async function startApp() {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
   }, 3000)
 
+  // Listen to hash changes to change levels
   window.addEventListener('hashchange', () => {
-    const level = window.location.hash.slice(1)
-    buildWorld(ctx, level).catch((err) => {
-      document.querySelector<HTMLDivElement>('#error')!.innerText = err
-      document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
-      document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-    })
+    changeLevel(ctx)
   })
 
-  // On load read hash
+  // On start load the level the first time
+  changeLevel(ctx)
+}
+
+function changeLevel(ctx: Context) {
   let level = window.location.hash.slice(1)
   if (!level) {
     window.location.hash = 'TR1/01-Caves.PHD'
     level = 'TR1/01-Caves.PHD'
   }
+
   document.querySelector<HTMLSelectElement>('#levelSelect')!.value = level
+
   buildWorld(ctx, level).catch((err) => {
     document.querySelector<HTMLDivElement>('#error')!.innerText = err
     document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'

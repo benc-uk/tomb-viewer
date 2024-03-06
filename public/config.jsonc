@@ -1,8 +1,8 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
   "width": 800,
-  "aspectRatio": 0.75,
-  // "aspectRatio": 0.5625,
+  //"aspectRatio": 0.75,
+  "aspectRatio": 0.5625,
 
   // Gamma settings
   "gamma": 0.9,
@@ -13,8 +13,11 @@
   // When stretching the canvas, this will turn smoothing on or off
   "smoothScale": true,
 
+  // Enable texture filtering
+  "textureFilter": false,
+
   // Camera settings
-  "drawDistance": 80000,
+  "drawDistance": 40000,
   "fov": 70,
   "speed": 100,
 
@@ -22,9 +25,9 @@
   "showLights": true,
   "lightConst": 2.8,
   "lightQuad": 0.0000005,
-  "lightBright": 1,
+  "lightBright": 0.8,
 
-  "distanceThreshold": 50000,
+  "distanceThreshold": 30000,
 
   // Debug
   // "startPos": [21816, -4254, -55698],

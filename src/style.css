@@ -67,6 +67,16 @@ canvas {
   right: 0;
 }
 
+#stats {
+  bottom: 0;
+  right: 0;
+}
+
+#statsInner {
+  font-size: 1.2rem;
+  margin: 0.5rem;
+}
+
 input[type='range'] {
   width: 200px;
 }
