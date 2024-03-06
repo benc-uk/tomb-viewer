@@ -21,8 +21,6 @@ type AppConfig = {
 
   startPos: XYZ
 
-  showLights: boolean
-
   lightConst: number
   lightQuad: number
   lightBright: number

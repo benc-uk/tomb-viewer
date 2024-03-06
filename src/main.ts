@@ -41,18 +41,6 @@ async function startApp() {
       document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
     })
   })
-  document.querySelector<HTMLInputElement>('#showLights')!.checked = config.showLights
-  document.querySelector<HTMLInputElement>('#showLights')!.addEventListener('change', (e) => {
-    config.showLights = (e.target as HTMLInputElement).checked
-
-    // Reload the level to apply the change
-    const level = document.querySelector<HTMLSelectElement>('#levelSelect')!.value
-    buildWorld(ctx, level).catch((err) => {
-      document.querySelector<HTMLDivElement>('#error')!.innerText = err
-      document.querySelector<HTMLDivElement>('#error')!.style.display = 'block'
-      document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-    })
-  })
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'h') {

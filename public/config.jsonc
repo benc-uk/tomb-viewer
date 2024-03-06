@@ -13,9 +13,6 @@
   // When stretching the canvas, this will turn smoothing on or off
   "smoothScale": true,
 
-  // Enable texture filtering
-  "textureFilter": false,
-
   // Camera settings
   "drawDistance": 80000,
   "fov": 70,
