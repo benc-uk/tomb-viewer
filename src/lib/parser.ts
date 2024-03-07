@@ -213,7 +213,7 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   const frameDataSize = data.getUint32(offset, true)
   offset += 4
-  for (let anim of level.animations) {
+  for (const anim of level.animations) {
     // We parse a single frame for now
     anim.frames[0] = t.ParseAnimFrame(data, offset + anim.frameOffset)
   }
@@ -223,17 +223,19 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   level.numModels = data.getUint32(offset, true)
   offset += 4
-  level.models = new Array<t.tr_model>()
+  level.models = new Map<number, t.tr_model>()
   for (let i = 0; i < level.numModels; i++) {
-    level.models.push(t.ParseModel(data, offset))
+    const model = t.ParseModel(data, offset)
+    level.models.set(model.id, model)
     offset += t.tr_model_size
   }
 
   level.numStaticMeshes = data.getUint32(offset, true)
   offset += 4
-  level.staticMeshes = new Array<t.tr_staticmesh>()
+  level.staticMeshes = new Map<number, t.tr_staticmesh>()
   for (let i = 0; i < level.numStaticMeshes; i++) {
-    level.staticMeshes.push(t.ParseStaticMesh(data, offset))
+    const staticMesh = t.ParseStaticMesh(data, offset)
+    level.staticMeshes.set(staticMesh.id, staticMesh)
     offset += t.tr_staticmesh_size
   }
 

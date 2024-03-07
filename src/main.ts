@@ -42,6 +42,31 @@ async function startApp() {
     })
   })
 
+  document.querySelector<HTMLInputElement>('#bright')!.value = '' + config.lightBright
+  document.querySelector<HTMLInputElement>('#bright')!.addEventListener('change', (e) => {
+    config.lightBright = parseFloat((e.target as HTMLInputElement).value)
+    console.log('Light brightness: ' + config.lightBright)
+
+    for (const light of ctx.lights) {
+      const i = light.metadata.intensity as number
+      light.colour = [config.lightBright * i, config.lightBright * i, config.lightBright * i]
+    }
+  })
+
+  document.querySelectorAll<HTMLInputElement>('.resBut')!.forEach((el: HTMLInputElement) => {
+    el.addEventListener('click', (evt) => {
+      document.querySelectorAll<HTMLInputElement>('.resBut')!.forEach((el: HTMLInputElement) => {
+        el.classList.remove('active')
+      })
+      const target = evt.target as HTMLInputElement
+      const res = target.value
+      target.classList.add('active')
+      config.width = parseInt(res)
+      document.querySelector<HTMLCanvasElement>('#canvas')!.width = config.width
+      document.querySelector<HTMLCanvasElement>('#canvas')!.height = config.width * config.aspectRatio
+    })
+  })
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'h') {
       document.querySelector<HTMLDivElement>('#help')!.style.display =

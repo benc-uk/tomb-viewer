@@ -3,7 +3,7 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Tuples } from 'gsots3d'
+import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
@@ -241,6 +241,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       roomLight.constant = config.lightConst * fade
       roomLight.quad = config.lightQuad * fade
       roomLight.linear = 0
+      roomLight.metadata.intensity = light.intensity / 0x1fff
     }
 
     // Now sprites
@@ -254,7 +255,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
     // Add room static meshes
     for (const roomStaticMesh of room.staticMeshes) {
       // Find the staticMesh, *weird* we have to do a search here, normally IDs are array indexes
-      const staticMesh = level.staticMeshes.find((m) => m.id === roomStaticMesh.meshId)
+      const staticMesh = level.staticMeshes.get(roomStaticMesh.meshId)
       if (!staticMesh) {
         console.warn(`🤔 Room static mesh not found: ${roomStaticMesh.meshId}`)
         continue
@@ -283,12 +284,13 @@ export async function buildWorld(ctx: Context, levelName: string) {
     }
   }
 
-  // Add entities to the world
+  // Add entities to the world, this is messy!
   for (const entity of level.entities) {
+    // We need to invert the room offsets, as we later add the entity to the room node
     const entityPos = [entity.x - level.rooms[entity.room].info.x, -entity.y, -entity.z + level.rooms[entity.room].info.z] as XYZ
 
-    // Pickups are sprites, special case
-    if (isEntityInCategory(entity, 'Pickup', level.version) || isEntityInCategory(entity, 'Puzzle', level.version)) {
+    // Pickups rendered as sprites, special case
+    if (isEntityInCategory(entity, 'Pickup', level.version)) {
       const spriteId = PickupSpriteLookup[level.version]?.get(entity.type) || 0
       const spriteInst = createSpriteInst(entityPos, spriteId, level.spriteTextures, spriteMaterials, ctx)
       roomNodes.get(entity.room)?.addChild(spriteInst)
@@ -296,11 +298,13 @@ export async function buildWorld(ctx: Context, levelName: string) {
     }
 
     // Filter out things that are enemies or Lara, and other stuff
-    if (isEntityInCategory(entity, 'Entity', level.version)) continue
+    if (isEntityInCategory(entity, 'Entity', level.version)) {
+      continue
+    }
 
     // Other entities are OK, so we find the model
     const modelId = entity.type
-    const model = level.models.find((m) => m.id === modelId)
+    const model = level.models.get(modelId)
     if (!model) {
       continue
     }

@@ -430,7 +430,7 @@ const tr1Data = [
   {
     id: 83,
     name: 'Savegame Crystal',
-    categories: ['Pickup'],
+    categories: ['Special'],
   },
   {
     id: 84,

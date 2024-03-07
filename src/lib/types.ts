@@ -143,12 +143,10 @@ export type tr1_level = {
   meshes: Map<number, tr_mesh>
 
   numStaticMeshes: uint32_t
-  // TODO: change to a map as they are indexed by id
-  staticMeshes: tr_staticmesh[]
+  staticMeshes: Map<number, tr_staticmesh>
 
   numModels: uint32_t
-  // TODO: change to a map as they are indexed by id
-  models: tr_model[]
+  models: Map<number, tr_model>
 
   numFloorData: uint32_t
   floorData: uint16_t[]

@@ -1,6 +1,6 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 1200,
+  "width": 800,
   //"aspectRatio": 0.75,
   "aspectRatio": 0.5625,
 
@@ -19,12 +19,11 @@
   // Camera settings
   "drawDistance": 40000,
   "fov": 70,
-  "speed": 300,
+  "speed": 120,
 
   // Lighting settings
-  "showLights": true,
-  "lightConst": 2.8,
-  "lightQuad": 0.0000005,
+  "lightConst": 6.0,
+  "lightQuad": 0.0000004,
   "lightBright": 0.8,
 
   "distanceThreshold": 30000,
