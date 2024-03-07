@@ -157,7 +157,7 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += 2
   }
 
-  // Parsing meshes is different, they are not 'packed' like the other data
+  // WARNING! Parsing meshes is *different*, they are not 'packed' like the other data
   // Extra comments here to help anyone that finds this code in the future!
 
   // First get the total size of the mesh data block
@@ -168,11 +168,11 @@ function parseTR1Level(data: DataView): t.tr1_level {
   const meshOffsetStart = offset
   offset += meshDataSize * 2
 
-  // Parse mesh pointers, we need to do this first to know how many meshes there are
+  // Get number of meshPointers we need to do this first to know how many meshes there are
   level.numMeshPointers = data.getUint32(offset, true)
   offset += 4
 
-  // Now we can parse the meshes
+  // Now we can parse the meshPointers array and the meshes
   level.meshPointers = new Array<t.uint32_t>()
   level.meshes = new Map<number, t.tr_mesh>()
   for (let i = 0; i < level.numMeshPointers; i++) {
@@ -187,11 +187,13 @@ function parseTR1Level(data: DataView): t.tr1_level {
     level.meshes.set(meshPointer, mesh)
   }
 
-  console.log(`🕸️ Meshes parsed & loaded: ${level.meshes.size}`)
-
-  const numAnimations = data.getUint32(offset, true)
+  level.numAnimations = data.getUint32(offset, true)
   offset += 4
-  offset += numAnimations * 32 // Skipped data
+  level.animations = new Array<t.tr_animation>()
+  for (let i = 0; i < level.numAnimations; i++) {
+    level.animations.push(t.ParseAnimation(data, offset))
+    offset += t.tr_animation_size
+  }
 
   const numStateChanges = data.getUint32(offset, true)
   offset += 4
@@ -205,18 +207,19 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
   offset += numAnimCommands * 2 // Skipped data
 
-  level.numMeshTrees = data.getUint32(offset, true)
+  const numMeshTrees = data.getUint32(offset, true)
   offset += 4
-  level.meshTrees = new Array<t.tr_meshtree_node>()
-  for (let i = 0; i < level.numMeshTrees; i++) {
-    // level.meshTrees.push(t.ParseMeshTreeNode(data, offset))
-    // console.log(` 🌲 Mesh tree node ${JSON.stringify(level.meshTrees[i])} parsed`)
-    offset += t.tr_meshtree_node_size
+  offset += numMeshTrees * 4 // Skipped data
+
+  const frameDataSize = data.getUint32(offset, true)
+  offset += 4
+  for (let anim of level.animations) {
+    // We parse a single frame for now
+    anim.frames[0] = t.ParseAnimFrame(data, offset + anim.frameOffset)
   }
 
-  const numFrames = data.getUint32(offset, true)
-  offset += 4
-  offset += numFrames * 2 // Skipped data
+  level.frames = new DataView(data.buffer, offset, frameDataSize * 2)
+  offset += frameDataSize * 2
 
   level.numModels = data.getUint32(offset, true)
   offset += 4
@@ -225,7 +228,6 @@ function parseTR1Level(data: DataView): t.tr1_level {
     level.models.push(t.ParseModel(data, offset))
     offset += t.tr_model_size
   }
-  console.log(`🗿 Models parsed & loaded: ${level.models.length}`)
 
   level.numStaticMeshes = data.getUint32(offset, true)
   offset += 4

@@ -20,6 +20,7 @@ type AppConfig = {
   speed: number
 
   startPos: XYZ
+  startAngle: number
 
   lightConst: number
   lightQuad: number

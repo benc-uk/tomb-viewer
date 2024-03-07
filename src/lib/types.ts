@@ -19,6 +19,7 @@ export type int16_t = number
 export type int32_t = number
 export type float = number
 export type ufixed16 = number
+export type fixed = number
 
 // Mysterious floating number format invented by TR devs
 // See https://opentomb.github.io/TRosettaStone3/trosettastone.html#_fixed_point_data_types
@@ -115,7 +116,7 @@ export enum tr_version {
 }
 
 // =============================================================================
-// Levels
+// The core and main level struct
 // =============================================================================
 
 export type tr1_level = {
@@ -140,17 +141,22 @@ export type tr1_level = {
   meshPointers: uint32_t[]
   // Store in a map for easy access, the mesh pointers are the keys
   meshes: Map<number, tr_mesh>
+
   numStaticMeshes: uint32_t
+  // TODO: change to a map as they are indexed by id
   staticMeshes: tr_staticmesh[]
 
   numModels: uint32_t
+  // TODO: change to a map as they are indexed by id
   models: tr_model[]
-
-  numMeshTrees: uint32_t
-  meshTrees: tr_meshtree_node[]
 
   numFloorData: uint32_t
   floorData: uint16_t[]
+
+  numAnimations: uint32_t
+  animations: tr_animation[]
+
+  frames: DataView
 
   palette: tr_palette
 }
@@ -435,24 +441,6 @@ export function ParseModel(data: DataView, offset: number): tr_model {
   } as tr_model
 }
 
-export type tr_meshtree_node = {
-  flags: uint8_t
-  offsetX: uint8_t
-  offsetY: uint8_t
-  offsetZ: uint8_t
-}
-
-export const tr_meshtree_node_size = 4
-
-export function ParseMeshTreeNode(data: DataView, offset: number): tr_meshtree_node {
-  return {
-    flags: data.getInt8(offset),
-    offsetX: data.getInt8(offset + 1),
-    offsetY: data.getInt8(offset + 2),
-    offsetZ: data.getInt8(offset + 3),
-  } as tr_meshtree_node
-}
-
 // =============================================================================
 // Entities
 // =============================================================================
@@ -563,4 +551,90 @@ export function ParseRoomSector(data: DataView, offset: number): tr_room_sector 
     roomAbove: data.getUint8(offset + 6),
     ceiling: data.getInt8(offset + 7),
   } as tr_room_sector
+}
+
+// =============================================================================
+// Animations
+// =============================================================================
+
+export type tr_animation = {
+  frameOffset: uint32_t
+  frameRate: uint8_t
+  frameSize: uint8_t
+  stateID: uint16_t
+  speed: fixed // 4 bytes
+  accel: fixed // 4 bytes
+  frameStart: uint16_t
+  frameEnd: uint16_t
+  nextAnimation: uint16_t
+  nextFrame: uint16_t
+  numStateChanges: uint16_t
+  stateChangeOffset: uint16_t
+  numAnimCommands: uint16_t
+  animCommand: uint16_t
+
+  // This is extra that is not in the original TRosettaStone3 documentation or part of this struct
+  frames: tr_anim_frame[]
+  frameCount: number
+}
+
+export const tr_animation_size = 32
+
+export function ParseAnimation(data: DataView, offset: number): tr_animation {
+  const anim = {
+    frameOffset: data.getUint32(offset, true),
+    frameRate: data.getUint8(offset + 4),
+    frameSize: data.getUint8(offset + 5),
+    stateID: data.getUint16(offset + 6, true),
+    speed: data.getFloat32(offset + 8, true),
+    accel: data.getFloat32(offset + 12, true),
+    frameStart: data.getUint16(offset + 16, true),
+    frameEnd: data.getUint16(offset + 18, true),
+    nextAnimation: data.getUint16(offset + 20, true),
+    nextFrame: data.getUint16(offset + 22, true),
+    numStateChanges: data.getUint16(offset + 24, true),
+    stateChangeOffset: data.getUint16(offset + 26, true),
+    numAnimCommands: data.getUint16(offset + 28, true),
+    animCommand: data.getUint16(offset + 30, true),
+  } as tr_animation
+
+  anim.frameCount = anim.frameEnd - anim.frameStart + 1
+  anim.frames = new Array<tr_anim_frame>()
+
+  return anim
+}
+
+export type tr_anim_frame = {
+  box: tr_bounding_box
+  offsetX: int16_t
+  offsetY: int16_t
+  offsetZ: int16_t
+  numValues: uint16_t
+  angleSets: pair[]
+  bytes: number
+}
+
+type pair = [number, number]
+
+export function ParseAnimFrame(data: DataView, offset: number): tr_anim_frame {
+  const numValues = data.getUint16(offset + 18, true)
+
+  const angleSets = new Array<pair>(numValues)
+  // Angle sets are pairs of words, theres numValues of pairs of 16 bit words
+  for (let i = 0; i < numValues; i++) {
+    const data1 = data.getUint16(offset + 20 + i * 2, true)
+    const data2 = data.getUint16(offset + 20 + i * 2 + 2, true)
+
+    angleSets[i] = [data1, data2]
+  }
+
+  return {
+    box: ParseBoundingBox(data, offset),
+    offsetX: data.getInt16(offset + 12, true),
+    offsetY: data.getInt16(offset + 14, true),
+    offsetZ: data.getInt16(offset + 16, true),
+    numValues: numValues,
+    angleSets: angleSets,
+    bytes: tr_bounding_box_size + 8 + numValues * 2,
+  } as tr_anim_frame
 }

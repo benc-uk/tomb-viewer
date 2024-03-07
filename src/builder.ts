@@ -3,13 +3,13 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node } from 'gsots3d'
+import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Tuples } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_mesh, tr_sprite_texture, ufixed16ToFloat, tr1_level } from './lib/types'
 import { config } from './config'
-import { Category, isEntityInCategory, PickupSpriteLookup } from './lib/entity'
+import { isEntityInCategory, PickupSpriteLookup } from './lib/entity'
 import { Model } from 'gsots3d'
 
 export async function buildWorld(ctx: Context, levelName: string) {
@@ -29,7 +29,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
   const lightMat = Material.createSolidColour(1, 1, 1)
   lightMat.emissive = [1, 1, 1]
 
-  console.log(`✨ Loaded level OK, ${level.numRooms} rooms, ${level.numEntities} entities`)
+  console.log(`✨ Level data parsing complete, building world...`)
 
   // Create all materials one for each tex-tile
   const materials = new Array<Material>()
@@ -201,10 +201,11 @@ export async function buildWorld(ctx: Context, levelName: string) {
       }
     }
 
-    // Build the room and add it to the world
+    // Build the room model and add it to the roomNode as a child instance
     try {
       ctx.buildCustomModel(builder, `room_${roomNum}`)
       const roomInstance = ctx.createModelInstance(`room_${roomNum}`)
+      roomInstance.enabled = false
       const boundBox = (roomInstance.renderable as Model).boundingBox
 
       // find center of the room bounds, whcih is 6 values for min and max XYZ
@@ -226,6 +227,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
     }
 
     // Add room lights
+    // NOTE: These are not added to the roomNode and directly to the world
     for (const light of room.lights) {
       const lightPos = [light.x, -light.y, -light.z] as XYZ
 
@@ -283,47 +285,57 @@ export async function buildWorld(ctx: Context, levelName: string) {
 
   // Add entities to the world
   for (const entity of level.entities) {
-    const vert = [entity.x, -entity.y, -entity.z] as XYZ
+    const entityPos = [entity.x - level.rooms[entity.room].info.x, -entity.y, -entity.z + level.rooms[entity.room].info.z] as XYZ
 
     // Pickups are sprites, special case
-    if (isEntityInCategory(entity, Category.PICKUP, level.version)) {
+    if (isEntityInCategory(entity, 'Pickup', level.version) || isEntityInCategory(entity, 'Puzzle', level.version)) {
       const spriteId = PickupSpriteLookup[level.version]?.get(entity.type) || 0
-      createSpriteInst(vert, spriteId, level.spriteTextures, spriteMaterials, ctx)
+      const spriteInst = createSpriteInst(entityPos, spriteId, level.spriteTextures, spriteMaterials, ctx)
+      roomNodes.get(entity.room)?.addChild(spriteInst)
       continue
     }
 
-    // if (isEntityInCategory(entity, Category.ENEMY, level.version)) continue
+    // Filter out things that are enemies or Lara, and other stuff
+    if (isEntityInCategory(entity, 'Entity', level.version)) continue
 
-    // // Other entities are models, so we find the model
-    // const modelId = entity.type
-    // const model = level.models.find((m) => m.id === modelId)
-    // if (!model) {
-    //   console.warn(`💥 Model not found: ${modelId}`)
-    //   continue
-    // }
+    // Other entities are OK, so we find the model
+    const modelId = entity.type
+    const model = level.models.find((m) => m.id === modelId)
+    if (!model) {
+      continue
+    }
 
-    // // Models are made up of multiple meshes, so we create an instance for each
-    // for (let m = 0; m < model.numMeshes; m++) {
-    //   const meshId = level.meshPointers[model.startingMesh + m]
-    //   const instance = ctx.createModelInstance(`mesh_${meshId}`)
-    //   instance.position = vert
-    //   instance.rotateY(entityAngleToDeg(entity.angle) * (Math.PI / 180))
-    // }
+    const meshInst = ctx.createModelInstance(`mesh_${level.meshPointers[model.startingMesh]}`)
+
+    // We store the mesh inside a node
+    // with the offsets from the first frame of the model's animation
+    const entityNode = new Node()
+    const firstFrame = level.animations[model.animation].frames[0]
+    meshInst.position = [firstFrame.offsetX, -firstFrame.offsetY, -firstFrame.offsetZ] as XYZ
+
+    entityNode.position = entityPos
+    entityNode.addChild(meshInst)
+    // Important! Rotate the *node* to the correct angle, not the model
+    entityNode.rotateY(entityAngleToDeg(entity.angle) * (Math.PI / 180))
+
+    roomNodes.get(entity.room)?.addChild(entityNode)
   }
 
+  console.log('🌍 World built OK, level fully loaded into 3D')
+  console.log(`🌐 Rooms: ${level.numRooms}, Entities ${level.numEntities}, Meshes: ${level.numMeshPointers}, Models: ${level.numModels}`)
+
   // Find the entity with ID type 0 this is Lara and the start point
-  const lara = level.entities.find((e) => isEntityInCategory(e, Category.LARA, level.version))
+  const lara = level.entities.find((e) => isEntityInCategory(e, 'Lara', level.version))
   if (lara) {
     ctx.camera.position = [lara.x, -lara.y + 768, -lara.z] as XYZ
 
-    const camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
+    let camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
+    camAngle = config.startAngle ?? camAngle
     ctx.camera.enableFPControls(camAngle, -0.2, 0.002, config.speed, true)
   }
 
   // Allow the config to override the start position
-  if (config.startPos) {
-    ctx.camera.position = config.startPos
-  }
+  ctx.camera.position = config.startPos ?? ctx.camera.position
 
   window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
@@ -372,6 +384,9 @@ Time:  ${Stats.totalTime.toFixed(2)}`
   }
 }
 
+/**
+ * Internal function for creating a sprite instance
+ */
 function createSpriteInst(
   vert: XYZ,
   spriteId: number,
@@ -402,6 +417,9 @@ function createSpriteInst(
   return spriteInst
 }
 
+/**
+ * Internal function for creating a GSOTS model from a TR mesh
+ */
 function buildMesh(mesh: tr_mesh, meshId: number, level: tr1_level, ctx: Context, materials: Material[]) {
   const builder = new ModelBuilder()
   const parts: Map<number, BuilderPart> = new Map()

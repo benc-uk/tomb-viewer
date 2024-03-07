@@ -1,6 +1,6 @@
 {
   // Resolution settings, note height is calculated from aspect ratio
-  "width": 800,
+  "width": 1200,
   //"aspectRatio": 0.75,
   "aspectRatio": 0.5625,
 
@@ -19,7 +19,7 @@
   // Camera settings
   "drawDistance": 40000,
   "fov": 70,
-  "speed": 100,
+  "speed": 300,
 
   // Lighting settings
   "showLights": true,
@@ -30,5 +30,6 @@
   "distanceThreshold": 30000,
 
   // Debug
-  // "startPos": [21816, -4254, -55698],
+  // "startPos": [21544, -6021, -89002],
+  // "startAngle": -0.9,
 }

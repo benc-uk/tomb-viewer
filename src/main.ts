@@ -63,7 +63,7 @@ async function startApp() {
 
   setTimeout(() => {
     document.querySelector<HTMLDivElement>('#help')!.style.display = 'none'
-  }, 3000)
+  }, 0)
 
   // Listen to hash changes to change levels
   window.addEventListener('hashchange', () => {
