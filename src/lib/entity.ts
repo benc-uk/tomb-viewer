@@ -22,6 +22,9 @@ type Entity = {
 }
 
 // Copied from trview.app/Resources/Files/type_names.txt
+// Small modifications have been made to categories
+// https://github.com/chreden/trview
+// Used under the MIT license
 const tr1Data = [
   {
     id: 0,

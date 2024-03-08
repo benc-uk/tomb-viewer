@@ -18,12 +18,12 @@
     "@types/node": "20.11.20",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.2.2",
-    "typescript-eslint": "^7.0.2",
-    "vite": "^5.1.4"
+    "typescript": "^5.4.2",
+    "typescript-eslint": "^7.1.1",
+    "vite": "^5.1.5"
   },
   "dependencies": {
-    "gsots3d": "../gsots3d",
+    "gsots3d": "0.0.5-alpha.14",
     "json5": "^2.2.3"
   }
 }
