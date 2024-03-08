@@ -3,13 +3,13 @@
 // Main level parser, currently only supports TR1 levels
 // =============================================================================
 
-import * as t from './types'
+import * as tr from './types'
 
 /**
  * Parses a Tomb Raider level file
  * @param dataArray Uint8Array of the raw level data
  */
-export function parseLevel(dataArray: Uint8Array): t.tr1_level {
+export function parseLevel(dataArray: Uint8Array): tr.level {
   // Need a DataView to help us read the file
   const data = new DataView(dataArray.buffer)
 
@@ -18,13 +18,13 @@ export function parseLevel(dataArray: Uint8Array): t.tr1_level {
   const verMagic = data.getUint32(0, true)
 
   // Check the version magic is even valid
-  if (!Object.values(t.tr_version).includes(verMagic)) {
+  if (!Object.values(tr.version).includes(verMagic)) {
     throw new Error('Unknown version ' + verMagic + ', this file is not a valid TR level file.')
   }
 
   // Parse the level based on the version
   switch (verMagic) {
-    case t.tr_version.TR1:
+    case tr.version.TR1:
       return parseTR1Level(data)
     default:
       throw new Error('This version of Tomb Raider is not supported yet :(')
@@ -35,9 +35,10 @@ export function parseLevel(dataArray: Uint8Array): t.tr1_level {
  * Parses a Tomb Raider 1 level file
  * @param data DataView of the raw level data
  */
-function parseTR1Level(data: DataView): t.tr1_level {
-  const level = {} as t.tr1_level
-  level.version = t.tr_version.TR1
+function parseTR1Level(data: DataView): tr.level {
+  const level = {} as tr.level
+  level.version = tr.version.TR1
+  level.verString = 'Tomb Raider 1'
 
   // Offset into the file, skip the version in the first 4 bytes
   let offset = 4
@@ -46,66 +47,69 @@ function parseTR1Level(data: DataView): t.tr1_level {
   level.numTextiles = data.getUint32(offset, true)
   offset += 4
 
-  level.textiles = Array<t.tr_textile8>(level.numTextiles)
+  level.textiles = Array<tr.textile8>()
   for (let i = 0; i < level.numTextiles; i++) {
-    level.textiles[i] = t.ParseTextile8(data, offset)
-    offset += t.tr_textile8_size
+    level.textiles.push(tr.ParseTextile8(data, offset))
+    offset += tr.textile8_size
   }
 
   // Skip unused data
   offset += 4
 
-  // Parse Rooms
+  // Parse Rooms, this is a major part of the parser
   level.numRooms = data.getUint16(offset, true)
   offset += 2
 
-  level.rooms = new Array<t.tr_room>(level.numRooms)
-  for (let i = 0; i < level.numRooms; i++) {
-    const room = {} as t.tr_room
-    room.info = t.ParseRoomInfo(data, offset)
-    offset += t.tr_room_info_size
+  level.rooms = new Array<tr.room>(level.numRooms)
+  for (let roomNum = 0; roomNum < level.numRooms; roomNum++) {
+    const room = {} as tr.room
+
+    // First block is the info struct
+    room.info = tr.ParseRoomInfo(data, offset)
+    offset += tr.room_info_size
 
     // This confusingly named variable is actually the size of just the tr_room_data
     // Which has no purpose unless we want skip the tr_room_data
-    room.numDataWords = data.getUint32(offset, true)
+    // NOT USED: const numDataWords = data.getUint32(offset, true)
     offset += 4
 
-    room.roomData = t.NewRoomData()
+    // Room data is all the room geometry vertexes etc
+    room.roomData = tr.NewRoomData()
 
     // Parse tr_room_data.vertices
     room.roomData.numVertices = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numVertices; j++) {
-      const room_vertex = t.ParseRoomVertex(data, offset)
+      const room_vertex = tr.ParseRoomVertex(data, offset)
       room.roomData.vertices.push(room_vertex)
-      offset += t.tr_room_vertex_size
+      offset += tr.room_vertex_size
     }
 
     // Parse tr_room_data.rectangles
     room.roomData.numRectangles = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numRectangles; j++) {
-      const face4 = t.ParseFace4(data, offset)
+      const face4 = tr.ParseFace4(data, offset)
       room.roomData.rectangles.push(face4)
-      offset += t.tr_face4_size
+      offset += tr.face4_size
     }
 
     // Parse tr_room_data.triangles
     room.roomData.numTriangles = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numTriangles; j++) {
-      const face3 = t.ParseFace3(data, offset)
+      const face3 = tr.ParseFace3(data, offset)
       room.roomData.triangles.push(face3)
-      offset += t.tr_face3_size
+      offset += tr.face3_size
     }
 
     // Parse tr_room_data.sprites
     room.roomData.numSprites = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numSprites; j++) {
-      const room_sprite = t.ParseRoomSprite(data, offset)
+      const room_sprite = tr.ParseRoomSprite(data, offset)
       room.roomData.sprites.push(room_sprite)
-      offset += t.tr_room_sprite_size
+      offset += tr.room_sprite_size
     }
 
     room.numPortals = data.getUint16(offset, true)
@@ -116,10 +120,10 @@ function parseTR1Level(data: DataView): t.tr1_level {
     offset += 2
     room.numXSectors = data.getUint16(offset, true)
     offset += 2
-    room.sectorList = new Array<t.tr_room_sector>()
+    room.sectorList = new Array<tr.room_sector>()
     for (let j = 0; j < room.numZSectors * room.numXSectors; j++) {
-      room.sectorList.push(t.ParseRoomSector(data, offset))
-      offset += t.tr_room_sector_size
+      room.sectorList.push(tr.ParseRoomSector(data, offset))
+      offset += tr.room_sector_size
     }
 
     room.ambientIntensity = data.getInt16(offset, true)
@@ -127,18 +131,18 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
     room.numLights = data.getUint16(offset, true)
     offset += 2
-    room.lights = new Array<t.tr_room_light>()
+    room.lights = new Array<tr.room_light>()
     for (let j = 0; j < room.numLights; j++) {
-      room.lights.push(t.ParseRoomLight(data, offset))
-      offset += t.tr_room_light_size
+      room.lights.push(tr.ParseRoomLight(data, offset))
+      offset += tr.room_light_size
     }
 
     room.numStaticMeshes = data.getUint16(offset, true)
     offset += 2
-    room.staticMeshes = new Array<t.tr_room_staticmesh>()
+    room.staticMeshes = new Array<tr.room_staticmesh>()
     for (let j = 0; j < room.numStaticMeshes; j++) {
-      room.staticMeshes.push(t.ParseRoomStaticMesh(data, offset))
-      offset += t.tr_room_staticmesh_size
+      room.staticMeshes.push(tr.ParseRoomStaticMesh(data, offset))
+      offset += tr.room_staticmesh_size
     }
 
     room.alternateRoom = data.getInt16(offset, true)
@@ -146,12 +150,12 @@ function parseTR1Level(data: DataView): t.tr1_level {
     room.flags = data.getInt16(offset, true)
     offset += 2
 
-    level.rooms[i] = room
+    level.rooms[roomNum] = room
   }
 
   level.numFloorData = data.getUint32(offset, true)
   offset += 4
-  level.floorData = new Array<t.uint16_t>()
+  level.floorData = new Array<tr.uint16_t>()
   for (let i = 0; i < level.numFloorData; i++) {
     level.floorData.push(data.getUint16(offset, true))
     offset += 2
@@ -173,8 +177,8 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
 
   // Now we can parse the meshPointers array and the meshes
-  level.meshPointers = new Array<t.uint32_t>()
-  level.meshes = new Map<number, t.tr_mesh>()
+  level.meshPointers = new Array<tr.uint32_t>()
+  level.meshes = new Map<number, tr.mesh>()
   for (let i = 0; i < level.numMeshPointers; i++) {
     const meshPointer = data.getUint32(offset, true)
     offset += 4
@@ -189,10 +193,10 @@ function parseTR1Level(data: DataView): t.tr1_level {
 
   level.numAnimations = data.getUint32(offset, true)
   offset += 4
-  level.animations = new Array<t.tr_animation>()
+  level.animations = new Array<tr.animation>()
   for (let i = 0; i < level.numAnimations; i++) {
-    level.animations.push(t.ParseAnimation(data, offset))
-    offset += t.tr_animation_size
+    level.animations.push(tr.ParseAnimation(data, offset))
+    offset += tr.animation_size
   }
 
   const numStateChanges = data.getUint32(offset, true)
@@ -215,45 +219,43 @@ function parseTR1Level(data: DataView): t.tr1_level {
   offset += 4
   for (const anim of level.animations) {
     // We parse a single frame for now
-    anim.frames[0] = t.ParseAnimFrame(data, offset + anim.frameOffset)
+    anim.frames[0] = tr.ParseAnimFrame(data, offset + anim.frameOffset)
   }
-
-  level.frames = new DataView(data.buffer, offset, frameDataSize * 2)
   offset += frameDataSize * 2
 
   level.numModels = data.getUint32(offset, true)
   offset += 4
-  level.models = new Map<number, t.tr_model>()
+  level.models = new Map<number, tr.model>()
   for (let i = 0; i < level.numModels; i++) {
-    const model = t.ParseModel(data, offset)
+    const model = tr.ParseModel(data, offset)
     level.models.set(model.id, model)
-    offset += t.tr_model_size
+    offset += tr.model_size
   }
 
   level.numStaticMeshes = data.getUint32(offset, true)
   offset += 4
-  level.staticMeshes = new Map<number, t.tr_staticmesh>()
+  level.staticMeshes = new Map<number, tr.staticmesh>()
   for (let i = 0; i < level.numStaticMeshes; i++) {
-    const staticMesh = t.ParseStaticMesh(data, offset)
+    const staticMesh = tr.ParseStaticMesh(data, offset)
     level.staticMeshes.set(staticMesh.id, staticMesh)
-    offset += t.tr_staticmesh_size
+    offset += tr.staticmesh_size
   }
 
   level.numObjectTextures = data.getUint32(offset, true)
   offset += 4
   // Parse object textures
-  level.objectTextures = new Array<t.tr_object_texture>(level.numObjectTextures)
+  level.objectTextures = new Array<tr.object_texture>()
   for (let i = 0; i < level.numObjectTextures; i++) {
-    level.objectTextures[i] = t.ParseObjectTexture(data, offset)
-    offset += t.tr_object_texture_size
+    level.objectTextures.push(tr.ParseObjectTexture(data, offset))
+    offset += tr.object_texture_size
   }
 
   level.numSpriteTextures = data.getUint32(offset, true)
   offset += 4
-  level.spriteTextures = new Array<t.tr_sprite_texture>(level.numSpriteTextures)
+  level.spriteTextures = new Array<tr.sprite_texture>()
   for (let i = 0; i < level.numSpriteTextures; i++) {
-    level.spriteTextures[i] = t.ParseSpriteTexture(data, offset)
-    offset += t.tr_sprite_texture_size
+    level.spriteTextures.push(tr.ParseSpriteTexture(data, offset))
+    offset += tr.sprite_texture_size
   }
 
   const numSpriteSequences = data.getUint32(offset, true)
@@ -285,16 +287,16 @@ function parseTR1Level(data: DataView): t.tr1_level {
   level.numEntities = data.getUint32(offset, true)
   offset += 4
   // Parse entities
-  level.entities = new Array<t.tr_entity>(level.numEntities)
+  level.entities = new Array<tr.entity>()
   for (let i = 0; i < level.numEntities; i++) {
-    level.entities[i] = t.ParseEntity(data, offset)
-    offset += t.tr_entity_size
+    level.entities.push(tr.ParseEntity(data, offset))
+    offset += tr.entity_size
   }
 
-  offset += 8192 // Light map - skipped data
+  offset += 8192 // Light map, skipped not needed
 
   // Parse and read the palette
-  level.palette = t.ParsePalette(data, offset)
+  level.palette = tr.ParsePalette(data, offset)
 
   return level
 }
@@ -304,34 +306,34 @@ function parseTR1Level(data: DataView): t.tr1_level {
  * @param data DataView of the level file
  * @param offset Offset into the mesh data block
  */
-function parseMesh(data: DataView, offset: number): t.tr_mesh {
-  const mesh = {} as t.tr_mesh
+function parseMesh(data: DataView, offset: number): tr.mesh {
+  const mesh = {} as tr.mesh
 
-  mesh.centre = t.ParseVertex(data, offset)
-  offset += t.tr_vertex_size
+  mesh.centre = tr.ParseVertex(data, offset)
+  offset += tr.vertex_size
 
   mesh.collRadius = data.getInt32(offset, true)
   offset += 4
 
   mesh.numVertices = data.getInt16(offset, true)
   offset += 2
-  mesh.vertices = new Array<t.tr_vertex>()
+  mesh.vertices = new Array<tr.vertex>()
   for (let j = 0; j < mesh.numVertices; j++) {
-    mesh.vertices.push(t.ParseVertex(data, offset))
-    offset += t.tr_vertex_size
+    mesh.vertices.push(tr.ParseVertex(data, offset))
+    offset += tr.vertex_size
   }
 
   mesh.numNormals = data.getInt16(offset, true)
   offset += 2
   // Weirdness see https://opentomb.github.io/TRosettaStone3/trosettastone.html#_meshes
   if (mesh.numNormals > 0) {
-    mesh.normals = new Array<t.tr_vertex>()
+    mesh.normals = new Array<tr.vertex>()
     for (let j = 0; j < mesh.numNormals; j++) {
-      mesh.normals.push(t.ParseVertex(data, offset))
-      offset += t.tr_vertex_size
+      mesh.normals.push(tr.ParseVertex(data, offset))
+      offset += tr.vertex_size
     }
   } else {
-    mesh.lights = new Array<t.int16_t>()
+    mesh.lights = new Array<tr.int16_t>()
     for (let j = 0; j < Math.abs(mesh.numNormals); j++) {
       mesh.lights.push(data.getInt16(offset, true))
       offset += 2
@@ -340,34 +342,34 @@ function parseMesh(data: DataView, offset: number): t.tr_mesh {
 
   mesh.numTexturedRectangles = data.getInt16(offset, true)
   offset += 2
-  mesh.texturedRectangles = new Array<t.tr_face4>()
+  mesh.texturedRectangles = new Array<tr.face4>()
   for (let j = 0; j < mesh.numTexturedRectangles; j++) {
-    mesh.texturedRectangles[j] = t.ParseFace4(data, offset)
-    offset += t.tr_face4_size
+    mesh.texturedRectangles[j] = tr.ParseFace4(data, offset)
+    offset += tr.face4_size
   }
 
   mesh.numTexturedTriangles = data.getInt16(offset, true)
   offset += 2
-  mesh.texturedTriangles = new Array<t.tr_face3>()
+  mesh.texturedTriangles = new Array<tr.face3>()
   for (let j = 0; j < mesh.numTexturedTriangles; j++) {
-    mesh.texturedTriangles[j] = t.ParseFace3(data, offset)
-    offset += t.tr_face3_size
+    mesh.texturedTriangles[j] = tr.ParseFace3(data, offset)
+    offset += tr.face3_size
   }
 
   mesh.numColouredRectangles = data.getInt16(offset, true)
   offset += 2
-  mesh.colouredRectangles = new Array<t.tr_face4>()
+  mesh.colouredRectangles = new Array<tr.face4>()
   for (let j = 0; j < mesh.numColouredRectangles; j++) {
-    mesh.colouredRectangles[j] = t.ParseFace4(data, offset)
-    offset += t.tr_face4_size
+    mesh.colouredRectangles[j] = tr.ParseFace4(data, offset)
+    offset += tr.face4_size
   }
 
   mesh.numColouredTriangles = data.getInt16(offset, true)
   offset += 2
-  mesh.colouredTriangles = new Array<t.tr_face3>()
+  mesh.colouredTriangles = new Array<tr.face3>()
   for (let j = 0; j < mesh.numColouredTriangles; j++) {
-    mesh.colouredTriangles[j] = t.ParseFace3(data, offset)
-    offset += t.tr_face3_size
+    mesh.colouredTriangles[j] = tr.ParseFace3(data, offset)
+    offset += tr.face3_size
   }
 
   return mesh

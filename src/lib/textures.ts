@@ -1,4 +1,9 @@
-import { tr_palette, tr_textile8, tr_textile8_size } from './types'
+// =============================================================================
+// Project: WebGL Tomb Raider
+// Helpers for working with textures and textiles
+// =============================================================================
+
+import { palette, textile8, textile8_size } from './types'
 
 /**
  * Return a tr_textile8 as a ArrayBuffer
@@ -6,11 +11,11 @@ import { tr_palette, tr_textile8, tr_textile8_size } from './types'
  * @param tex The textile to convert
  * @param palette The palette to use
  */
-export function textile8ToBuffer(tex: tr_textile8, palette: tr_palette) {
+export function textile8ToBuffer(tex: textile8, palette: palette) {
   const buffer = new ArrayBuffer(256 * 256 * 4)
   const imgData = new Uint8Array(buffer)
 
-  for (let i = 0; i < tr_textile8_size; i++) {
+  for (let i = 0; i < textile8_size; i++) {
     // Look up colour in the palette
     const colour = palette[tex[i]]
 

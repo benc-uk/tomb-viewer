@@ -1,4 +1,9 @@
-import { tr_entity, tr_version } from './types'
+// =============================================================================
+// Project: WebGL Tomb Raider
+// Entity database for mapping entity types (aka IDs) to names and categories
+// =============================================================================
+
+import { entity, version } from './types'
 
 export type Category =
   | 'Lara'
@@ -953,8 +958,8 @@ const tr1Data = [
 ] as Entity[]
 
 // Entity database for each game version and every entity
-export const EntityDB: { [key in tr_version]?: Entity[] } = {
-  [tr_version.TR1]: tr1Data,
+export const EntityDB: { [key in version]?: Entity[] } = {
+  [version.TR1]: tr1Data,
 }
 
 /**
@@ -963,7 +968,7 @@ export const EntityDB: { [key in tr_version]?: Entity[] } = {
  * @param category Category of the entity to check for
  * @param version Version of the game
  */
-export function isEntityInCategory(entity: tr_entity, category: Category, version: tr_version): boolean {
+export function isEntityInCategory(entity: entity, category: Category, version: version): boolean {
   const dbEntity = EntityDB[version]?.find((e) => e.id === entity.type)
   return dbEntity?.categories?.includes(category) ?? false
 }
@@ -971,8 +976,8 @@ export function isEntityInCategory(entity: tr_entity, category: Category, versio
 /**
  * Maps entity IDs to fixed/well-known sprite IDs only used for pickups
  */
-export const PickupSpriteLookup: { [key in tr_version]?: Map<number, number> } = {
-  [tr_version.TR1]: new Map([
+export const PickupSpriteLookup: { [key in version]?: Map<number, number> } = {
+  [version.TR1]: new Map([
     [84, 0],
     [85, 1],
     [86, 2],

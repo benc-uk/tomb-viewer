@@ -7,7 +7,7 @@ import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureC
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
-import { entityAngleToDeg, isWaterRoom, trVertToXZY, tr_mesh, tr_sprite_texture, ufixed16ToFloat, tr1_level } from './lib/types'
+import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { config } from './config'
 import { isEntityInCategory, PickupSpriteLookup } from './lib/entity'
 import { Model } from 'gsots3d'
@@ -394,7 +394,7 @@ Time:  ${Stats.totalTime.toFixed(2)}`
 function createSpriteInst(
   vert: XYZ,
   spriteId: number,
-  spriteTextures: tr_sprite_texture[],
+  spriteTextures: sprite_texture[],
   spriteMaterials: Material[],
   ctx: Context,
   levelName?: string
@@ -424,7 +424,7 @@ function createSpriteInst(
 /**
  * Internal function for creating a GSOTS model from a TR mesh
  */
-function buildMesh(mesh: tr_mesh, meshId: number, level: tr1_level, ctx: Context, materials: Material[]) {
+function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, materials: Material[]) {
   const builder = new ModelBuilder()
   const parts: Map<number, BuilderPart> = new Map()
 

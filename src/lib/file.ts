@@ -1,3 +1,8 @@
+// =============================================================================
+// Project: WebGL Tomb Raider
+// File reading utilities
+// =============================================================================
+
 /**
  * Fetches a level file as a Uint8Array
  * @param path - The path to the level file, e.g. Tomb-Raider-1/08-Cistern.PHD
