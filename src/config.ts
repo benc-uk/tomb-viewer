@@ -6,21 +6,20 @@
 import { XYZ } from 'gsots3d'
 import JSON5 from 'json5'
 
-type AppConfig = {
+export type AppConfig = {
   width: number
   aspectRatio: number
 
   gamma: number
-  fullWidth: boolean
-  smoothScale: boolean
+  ambient: number
+
   textureFilter: boolean
 
   drawDistance: number
   fov: number
   speed: number
 
-  startPos: XYZ
-  startAngle: number
+  startPos?: XYZ
 
   lightConst: number
   lightQuad: number
@@ -29,12 +28,10 @@ type AppConfig = {
   distanceThreshold: number
 }
 
-// Global and exported config
-export let config = {} as AppConfig
-
 export async function loadConfig() {
   const configResp = await fetch('config.jsonc')
   const configText = await configResp.text()
 
-  config = JSON5.parse(configText) as AppConfig
+  const config = JSON5.parse(configText) as AppConfig
+  return config
 }

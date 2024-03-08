@@ -6,40 +6,56 @@
 
     <link rel="icon" type="image/png" href="favicon.png" />
 
-    <title>Tomb Viewer</title>
-    <script type="module" src="/src/main.ts"></script>
+    <title>Tomb Raider WebGL</title>
   </head>
 
-  <body>
+  <body x-data="app" @keydown.h="showHelp = !showHelp">
     <div id="controls" class="blurbox">
       <details>
         <summary>⚙️</summary>
-
+        <br />
         <div class="flex-row">
           <label for="bright"> Brightness</label>
-          <input type="range" mix="0.1" max="2.0" step="0.01" id="bright" />
+          <input type="range" mix="0.1" max="2.5" step="0.01" id="bright" @change="brightness" />
         </div>
         <div class="flex-row">
           <label for="texFilt"> Filtering</label>
-          <input type="checkbox" id="texFilt" />
+          <input type="checkbox" id="texFilt" @click="texFilter" />
+        </div>
+        <div class="flex-row">
+          <label for="smooth"> Smoothing</label>
+          <input type="checkbox" id="smooth" x-model="smooth" />
+        </div>
+        <div class="flex-row">
+          <label for="stretch"> Stretch</label>
+          <input type="checkbox" id="stretch" x-model="fullWidth" />
+        </div>
+        <div class="flex-row">
+          <label for="stretch"> Widescreen</label>
+          <input type="checkbox" id="stretch" @click="widescreen" checked />
         </div>
 
         <div class="flex-row">
-          <button value="320" class="resBut">320</button>
-          <button value="640" class="resBut">640</button>
-          <button value="800" class="resBut active">800</button>
-          <button value="1200" class="resBut">1200</button>
-          <button value="1600" class="resBut">1600</button>
+          <label for="stretch"> Resolution</label>
+          <select x-model="width">
+            <option>320</option>
+            <option>640</option>
+            <option>800</option>
+            <option>1024</option>
+            <option>1280</option>
+            <option>1600</option>
+          </select>
         </div>
       </details>
     </div>
 
-    <div id="stats" class="blurbox">
-      <pre id="statsInner"></pre>
+    <div x-show="stats" id="stats" class="blurbox">
+      <pre id="statsInner" x-text="stats"></pre>
     </div>
 
     <main>
-      <select id="levelSelect">
+      <select x-model="levelName" id="levelSelect">
+        <option value="" disabled>&nbsp; Tomb Raider 1</option>
         <option value="TR1/01-Caves.PHD">01 Caves</option>
         <option value="TR1/02-City-of-Vilcabamba.PHD">02 City of Vilcabamba</option>
         <option value="TR1/03-The-Lost-Valley.PHD">03 The Lost Valley</option>
@@ -61,22 +77,44 @@
         <option value="TR1-UB/02-Temple-of-the-Cat.PHD">02 Temple of the Cat</option>
         <option value="TR1-UB/03-Atlantean-Stronghold.PHD">03 Atlantean Stronghold</option>
         <option value="TR1-UB/04-The-Hive.PHD">04 The Hive</option>
+        <option value="" disabled>&nbsp; Tomb Raider 2</option>
+        <option value="TR2/01-Great-Wall.TR2">01 Great Wall</option>
+        <option value="TR2/02-Venice.TR2">02 Venice</option>
+        <option value="TR2/03-Bartoli-Hideout.TR2">03 Bartoli's Hideout</option>
+        <option value="TR2/04-Opera-House.TR2">04 Opera House</option>
+        <option value="TR2/05-Offshore-Rig.TR2">05 Offshore Rig</option>
+        <option value="TR2/06-Diving-Area.TR2">06 Diving Area</option>
+        <option value="TR2/07-40-Fathoms.TR2">07 40 Fathoms</option>
+        <option value="TR2/08-Wreck-of-the-Maria-Doria.TR2">08 Wreck of the Maria Doria</option>
+        <option value="TR2/09-Living-Quarters.TR2">09 Living Quarters</option>
+        <option value="TR2/10-The-Deck.TR2">10 The Deck</option>
+        <option value="TR2/11-Tibetan-Foothills.TR2">11 Tibetan Foothills</option>
+        <option value="TR2/12-Barkhang-Monastery.TR2">12 Barkhang Monastery</option>
+        <option value="TR2/13-Catacombs-of-the-Talion.TR2">13 Catacombs of the Talion</option>
+        <option value="TR2/14-Ice-Palace.TR2">14 Ice Palace</option>
+        <option value="TR2/15-Temple-of-Xian.TR2">15 Temple of Xian</option>
+        <option value="TR2/16-Floating-Islands.TR2">16 Floating Islands</option>
+        <option value="TR2/17-The-Dragon-TR2">17 The Dragon</option>
+        <option value="TR2/18-Home-Sweet-Home.TR2">18 Home Sweet Home</option>
+        <option value="TR2/00-Laras-Home.TR2">00 Laras Home</option>
       </select>
 
-      <canvas id="canvas"></canvas>
+      <canvas x-ref="canvas" :class="{'pixelated': !smooth, 'fullWidth': fullWidth}"></canvas>
 
-      <div id="error" class="blurbox"></div>
+      <div x-show="error" id="error" class="blurbox" x-text="error"></div>
 
-      <div id="help" onclick="this.style.display='none'" class="blurbox">
-        Tomb Raider - WebGL Viewer<br />Ben Coleman 2024, v0.0.4
+      <div x-show="showHelp" id="help" class="blurbox" @click="showHelp = false">
+        Tomb Raider - WebGL Edition<br />Ben Coleman 2024, v0.0.5
         <ul>
-          <li>H - Show or hide this help</li>
-          <li>Cursor / WASD - move</li>
+          <li>Cursor / WASD - Move</li>
           <li>Mouse - Look around</li>
-          <li>Space - Swap alt rooms, e.g water level</li>
-          <li>{ } = to move up & down</li>
+          <li>[ ] - Move up & down</li>
+          <li>1 - Swap alt rooms</li>
+          <li>2 - Open/close doors</li>
+          <li>H - Show or hide this help</li>
         </ul>
       </div>
     </main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

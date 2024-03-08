@@ -1,20 +1,7 @@
 {
-  // Resolution settings, note height is calculated from aspect ratio
-  "width": 800,
-  //"aspectRatio": 0.75,
-  "aspectRatio": 0.5625,
-
   // Gamma settings
   "gamma": 0.9,
-
-  // This will stretch the canvas to fit the browser window width
-  "fullWidth": true,
-
-  // When stretching the canvas, this will turn smoothing on or off
-  "smoothScale": true,
-
-  // Enable texture filtering
-  "textureFilter": false,
+  "ambient": 0.15,
 
   // Camera settings
   "drawDistance": 40000,
@@ -26,9 +13,6 @@
   "lightQuad": 0.0000004,
   "lightBright": 0.8,
 
+  // Used to cull rooms that are too far away
   "distanceThreshold": 30000,
-
-  // Debug
-  // "startPos": [21544, -6021, -89002],
-  // "startAngle": -0.9,
 }

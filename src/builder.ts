@@ -3,16 +3,15 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node } from 'gsots3d'
+import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
-import { config } from './config'
+import { AppConfig } from './config'
 import { isEntityInCategory, PickupSpriteLookup } from './lib/entity'
-import { Model } from 'gsots3d'
 
-export async function buildWorld(ctx: Context, levelName: string) {
+export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
   ctx.removeAllInstances()
 
   const data = await getLevelFile(levelName)
@@ -235,6 +234,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
       const fade = light.fade / 0x7fff
 
       intense *= config.lightBright
+      if (levelName == 'TR1/01-Caves.PHD') intense *= 2
       // intense *= room.ambientIntensity / 30000
 
       const roomLight = ctx.createPointLight(lightPos, [intense, intense, intense])
@@ -334,7 +334,6 @@ export async function buildWorld(ctx: Context, levelName: string) {
     ctx.camera.position = [lara.x, -lara.y + 768, -lara.z] as XYZ
 
     let camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
-    camAngle = config.startAngle ?? camAngle
     ctx.camera.enableFPControls(camAngle, -0.2, 0.002, config.speed, true)
   }
 
@@ -342,7 +341,7 @@ export async function buildWorld(ctx: Context, levelName: string) {
   ctx.camera.position = config.startPos ?? ctx.camera.position
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === ' ') {
+    if (e.key === '1') {
       // Find all the the alternate rooms and flip visibility
       for (const [_, node] of roomNodes) {
         if (node.metadata.altRoom) {
@@ -379,12 +378,6 @@ export async function buildWorld(ctx: Context, levelName: string) {
         }
       }
     }
-
-    document.querySelector<HTMLDivElement>('#statsInner')!.innerText = `FPS:   ${Stats.FPS}
-Draws: ${Stats.drawCallsPerFrame}
-Inst:  ${Stats.instances}
-Tris:  ${Stats.triangles}
-Time:  ${Stats.totalTime.toFixed(2)}`
   }
 }
 
