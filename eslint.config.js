@@ -20,6 +20,7 @@ export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.r
       'error',
       {
         destructuredArrayIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
       },
     ],
   },
