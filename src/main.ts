@@ -77,6 +77,7 @@ Time:  ${Stats.totalTime.toFixed(2)}`
     window.location.hash = levelName
 
     try {
+      this.error = ''
       await buildWorld(config, ctx, levelName)
     } catch (e) {
       this.showHelp = false
@@ -89,6 +90,7 @@ Time:  ${Stats.totalTime.toFixed(2)}`
     config.startPos = ctx.camera.position
     config.textureFilter = (e.target as HTMLInputElement).checked
     try {
+      this.error = ''
       await buildWorld(config, ctx, this.levelName)
     } catch (e) {
       this.showHelp = false
