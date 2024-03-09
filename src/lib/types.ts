@@ -111,8 +111,6 @@ export enum version {
   TR3 = 0xff080038,
   TR4 = 0x00345254,
   TR5 = 0x00345254,
-  TR4_DEMO = 0x63345254,
-  TR5_DEMO = 0x63345254,
 }
 
 export type version_string = 'Tomb Raider 1' | 'Tomb Raider 2' | 'Tomb Raider 3'
@@ -129,6 +127,7 @@ export type level = {
 
   numTextiles: uint32_t
   textiles: textile8[]
+  textiles16: textile16[]
 
   numRooms: uint16_t
   rooms: room[]
@@ -158,7 +157,8 @@ export type level = {
   numAnimations: uint32_t
   animations: animation[]
 
-  palette: palette
+  palette: colour[]
+  palette16: colour4[] // Note this is NOT used to lookup textiles16 colours!
 }
 
 // =============================================================================
@@ -173,20 +173,6 @@ export type colour = {
 
 export const colour_size = 3
 
-export type palette = colour[]
-
-export const palette_size = 256 * colour_size
-
-export function ParsePalette(data: DataView, offset: number): palette {
-  const palette = new Array<colour>(256)
-
-  for (let i = 0; i < 256; i++) {
-    palette[i] = ParseColour(data, offset + i * colour_size)
-  }
-
-  return palette as palette
-}
-
 export function ParseColour(data: DataView, offset: number): colour {
   return {
     r: data.getUint8(offset),
@@ -195,11 +181,54 @@ export function ParseColour(data: DataView, offset: number): colour {
   } as colour
 }
 
+export const palette_size = 256 * colour_size
+
+export function ParsePalette(data: DataView, offset: number): colour[] {
+  const palette = new Array<colour>(256)
+
+  for (let i = 0; i < 256; i++) {
+    palette[i] = ParseColour(data, offset + i * colour_size)
+  }
+
+  return palette
+}
+
+export type colour4 = {
+  r: uint8_t
+  g: uint8_t
+  b: uint8_t
+  unused: uint8_t
+}
+
+export function ParseColour4(data: DataView, offset: number): colour4 {
+  return {
+    r: data.getUint8(offset),
+    g: data.getUint8(offset + 1),
+    b: data.getUint8(offset + 2),
+    unused: data.getUint8(offset + 3),
+  } as colour4
+}
+
+export const colour4_size = 4
+
+export const palette16_size = 256 * colour4_size
+
+export function ParsePalette16(data: DataView, offset: number): colour4[] {
+  const palette = new Array<colour4>(256)
+
+  for (let i = 0; i < 256; i++) {
+    palette[i] = ParseColour4(data, offset + i * colour4_size)
+  }
+
+  return palette
+}
+
 // =============================================================================
 // Textures
 // =============================================================================
 
-export type textile8 = Uint8Array
+export type textile8 = Uint8Array // 256 * 256
+export type textile16 = Uint16Array // 256 * 256
 
 export function ParseTextile8(data: DataView, offset: number): textile8 {
   const textile = new Uint8Array(textile8_size)
@@ -211,7 +240,18 @@ export function ParseTextile8(data: DataView, offset: number): textile8 {
   return textile
 }
 
+export function ParseTextile16(data: DataView, offset: number): textile16 {
+  const textile = new Uint16Array(textile16_size)
+
+  for (let j = 0; j < textile16_size; j++) {
+    textile[j] = data.getUint16(offset + j * 2, true)
+  }
+
+  return textile
+}
+
 export const textile8_size = 256 * 256
+export const textile16_size = 256 * 256 * 2
 
 export type object_texture = {
   attribute: uint16_t
@@ -322,7 +362,8 @@ export type room_vertex = {
   lighting: int16_t
 }
 
-export const room_vertex_size = vertex_size + 2
+export const room_vertex_size = 8
+export const room_vertex_size_tr2 = 12
 
 export function ParseRoomVertex(data: DataView, offset: number): room_vertex {
   return {
@@ -359,6 +400,7 @@ export type room_staticmesh = {
 }
 
 export const room_staticmesh_size = 18
+export const room_staticmesh_size_tr2 = 20
 
 export function ParseRoomStaticMesh(data: DataView, offset: number): room_staticmesh {
   return {
@@ -368,6 +410,18 @@ export function ParseRoomStaticMesh(data: DataView, offset: number): room_static
     rotation: data.getUint16(offset + 12, true),
     intensity: data.getUint16(offset + 14, true),
     meshId: data.getUint16(offset + 16, true),
+  } as room_staticmesh
+}
+
+export function ParseRoomStaticMeshTR2(data: DataView, offset: number): room_staticmesh {
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    rotation: data.getUint16(offset + 12, true),
+    intensity: data.getUint16(offset + 14, true),
+    // Skip intensity2 uint16_t isn't used anyhow!
+    meshId: data.getUint16(offset + 18, true),
   } as room_staticmesh
 }
 
@@ -516,6 +570,7 @@ export type room_light = {
 }
 
 export const room_light_size = 18
+export const room_light_size_tr2 = 24
 
 export function ParseRoomLight(data: DataView, offset: number): room_light {
   return {
@@ -524,6 +579,18 @@ export function ParseRoomLight(data: DataView, offset: number): room_light {
     z: data.getInt32(offset + 8, true),
     intensity: data.getUint16(offset + 12, true),
     fade: data.getUint32(offset + 14, true),
+  } as room_light
+}
+
+export function ParseRoomLightTR2(data: DataView, offset: number): room_light {
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    intensity: data.getUint16(offset + 12, true),
+    // Skip intensity2 uint16_t was never used in real game
+    fade: data.getUint32(offset + 16, true),
+    // Skip fade2 uint32_t was never used in real game
   } as room_light
 }
 

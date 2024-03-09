@@ -20,7 +20,7 @@ virtual struct tr_room  // (variable length)
   tr_room_light Lights[NumLights];    // List of lights
 
   uint16_t NumStaticMeshes;                            // Number of static meshes
-  tr2_room_staticmesh StaticMeshes[NumStaticMeshes];   // List of static meshes
+  tr_room_staticmesh StaticMeshes[NumStaticMeshes];   // List of static meshes
 
   int16_t AlternateRoom;
   int16_t Flags;
@@ -29,7 +29,7 @@ virtual struct tr_room  // (variable length)
 virtual struct tr_room_data    // (variable length)
 {
   int16_t NumVertices;                   // Number of vertices in the following list
-  tr2_room_vertex Vertices[NumVertices]; // List of vertices (relative coordinates)
+  tr_room_vertex Vertices[NumVertices]; // List of vertices (relative coordinates)
 
   int16_t NumRectangles;                 // Number of textured rectangles
   tr_face4 Rectangles[NumRectangles];    // List of textured rectangles

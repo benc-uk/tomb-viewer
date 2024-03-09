@@ -6,7 +6,7 @@
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
+import { bufferToCanvas, getRegionFromBuffer, textile16ToBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { AppConfig } from './config'
 import { isEntityInCategory, PickupSpriteLookup } from './lib/entity'
@@ -19,6 +19,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
   // Kinda important! Parse the level data into a TR level data structure
   const level = parseLevel(data)
+
+  // 🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  // DEBUG DUMP TEXTILES
+  // 🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  // for (let i = 0; i < level.textiles.length; i++) {
+  //   const buffer = textile8ToBuffer(level.textiles[i], level.palette)
+  //   // const buffer = textile16ToBuffer(level.textiles16[i])
+  //   // console.log(`🖼️ Dumping textile ${i} to canvas`, buffer)
+  //   document.body.prepend(bufferToCanvas(buffer, 256, 256))
+  // }
 
   // Clear the world, lights and texture cache for when we load a new level
   ctx.removeAllInstances()
@@ -49,6 +59,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
 
+    // Snip the sprite section, from the larger textile image texture
     const buffer = getRegionFromBuffer(tileBuffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
 

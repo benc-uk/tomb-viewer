@@ -41,6 +41,7 @@ Alpine.data('app', () => ({
     this.loadLevel(window.location.hash ? window.location.hash.slice(1) : 'TR1/01-Caves.PHD')
 
     this.$watch('levelName', (value) => {
+      console.clear()
       this.loadLevel(value)
     })
 
@@ -80,6 +81,8 @@ Time:  ${Stats.totalTime.toFixed(2)}`
       this.error = ''
       await buildWorld(config, ctx, levelName)
     } catch (e) {
+      console.log(e)
+
       this.showHelp = false
       this.error = e as string
     }

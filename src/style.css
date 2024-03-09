@@ -4,7 +4,7 @@ body {
   background-color: #000000;
   color: #b3cad1;
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 main {
@@ -34,6 +34,7 @@ option {
 }
 
 canvas {
+  display: inline;
   margin-right: auto;
   margin-left: auto;
   display: block;
