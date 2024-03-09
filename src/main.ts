@@ -87,7 +87,9 @@ Time:  ${Stats.totalTime.toFixed(2)}`
     const c = this.$refs.canvas as HTMLCanvasElement
     c.width = this.width
     c.height = this.height
-    if (ctx) ctx.resize(true)
+    if (ctx) {
+      ctx.resize(true)
+    }
   },
 
   // Load a new level, wraps the buildWorld function

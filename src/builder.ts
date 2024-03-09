@@ -45,8 +45,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   }
 
   // Create all sprite materials
-  let spriteId = 0
-  document.querySelectorAll('.sprite').forEach((e) => e.remove())
   for (const sprite of level.spriteTextures) {
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
@@ -60,7 +58,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     mat.emissive = [1, 1, 1]
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
-    spriteId++
   }
 
   // Create all GSOTS models for meshes
@@ -247,7 +244,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const fade = light.fade / 0x7fff
 
       intense *= config.lightBright
-      if (levelName == 'TR1/01-Caves.PHD') intense *= 2
+      if (levelName === 'TR1/01-Caves.PHD') {
+        intense *= 2
+      }
       // intense *= room.ambientIntensity / 30000
 
       const roomLight = ctx.createPointLight(lightPos, [intense, intense, intense])
@@ -350,7 +349,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     console.log(`👩 Lara entity found at ${lara.x}, ${lara.y}, ${lara.z}`)
     ctx.camera.position = [lara.x, -lara.y + 768, -lara.z] as XYZ
 
-    let camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
+    const camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
     ctx.camera.enableFPControls(camAngle, -0.2, 0.002, config.speed, true)
   } else {
     console.error(`💥 Error: No Lara entity found in level! Falling back to room 0`)
