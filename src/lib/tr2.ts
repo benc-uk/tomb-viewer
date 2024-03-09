@@ -3,13 +3,20 @@
 // Parser for Tomb Raider 2 level files
 // =============================================================================
 
-// import { parseMesh } from './parser'
+import { parseMesh } from './parser'
 import * as tr from './types'
 
 export function parseLevel(data: DataView): tr.level {
   const level = {} as tr.level
   level.version = tr.version.TR2
   level.verString = 'Tomb Raider 2'
+
+  level.spriteTextures = new Array<tr.sprite_texture>()
+  level.objectTextures = new Array<tr.object_texture>()
+  level.staticMeshes = new Map<number, tr.staticmesh>()
+  level.meshes = new Map<number, tr.mesh>()
+  level.entities = new Array<tr.entity>()
+  level.models = new Map<number, tr.model>()
 
   // Offset into the file, skip the version in the first 4 bytes
   let offset = 4
@@ -40,13 +47,10 @@ export function parseLevel(data: DataView): tr.level {
   offset += 4 // 4 bytes of unused nothingness
 
   level.numRooms = data.getUint16(offset, true)
-  console.log('numRooms', level.numRooms)
 
   offset += 2
   level.rooms = new Array<tr.room>(level.numRooms)
   for (let roomNum = 0; roomNum < level.numRooms; roomNum++) {
-    console.log('--------roomNum', roomNum, 'offset', offset)
-
     const room = {} as tr.room
 
     // First block is the info struct
@@ -55,46 +59,38 @@ export function parseLevel(data: DataView): tr.level {
 
     // This confusingly named variable is actually the size of just the tr_room_data
     // Which has no purpose unless we want skip the tr_room_data
-    //const numDataWords = data.getUint32(offset, true)
+    // const numDataWords = data.getUint32(offset, true)
     offset += 4
 
     // Room data is all the room geometry vertexes etc
     room.roomData = tr.NewRoomData()
 
-    // Parse tr_room_data.vertices
     room.roomData.numVertices = data.getUint16(offset, true)
     offset += 2
-    console.log('numVertices', room.roomData.numVertices)
     for (let j = 0; j < room.roomData.numVertices; j++) {
       const room_vertex = tr.ParseRoomVertex(data, offset)
       room.roomData.vertices.push(room_vertex)
       offset += tr.room_vertex_size_tr2 // Note length of vertex struct is larger in TR2
     }
 
-    // Parse tr_room_data.rectangles
     room.roomData.numRectangles = data.getUint16(offset, true)
     offset += 2
-    console.log('numRectangles', room.roomData.numRectangles)
     for (let j = 0; j < room.roomData.numRectangles; j++) {
       const face4 = tr.ParseFace4(data, offset)
       room.roomData.rectangles.push(face4)
       offset += tr.face4_size
     }
 
-    // Parse tr_room_data.triangles
     room.roomData.numTriangles = data.getUint16(offset, true)
     offset += 2
-    console.log('numTriangles', room.roomData.numTriangles)
     for (let j = 0; j < room.roomData.numTriangles; j++) {
       const face3 = tr.ParseFace3(data, offset)
       room.roomData.triangles.push(face3)
       offset += tr.face3_size
     }
 
-    // Parse tr_room_data.sprites
     room.roomData.numSprites = data.getUint16(offset, true)
     offset += 2
-    console.log('numSprites', room.roomData.numSprites)
     for (let j = 0; j < room.roomData.numSprites; j++) {
       const room_sprite = tr.ParseRoomSprite(data, offset)
       room.roomData.sprites.push(room_sprite)
@@ -102,7 +98,6 @@ export function parseLevel(data: DataView): tr.level {
     }
 
     room.numPortals = data.getUint16(offset, true)
-    console.log('numPortals', room.numPortals)
 
     offset += 2
     offset += room.numPortals * 32 // Skipped data
@@ -111,7 +106,6 @@ export function parseLevel(data: DataView): tr.level {
     offset += 2
     room.numXSectors = data.getUint16(offset, true)
     offset += 2
-    console.log('numZSectors', room.numZSectors, 'numXSectors', room.numXSectors)
 
     room.sectorList = new Array<tr.room_sector>()
     for (let j = 0; j < room.numZSectors * room.numXSectors; j++) {
@@ -120,13 +114,13 @@ export function parseLevel(data: DataView): tr.level {
     }
 
     room.ambientIntensity = data.getInt16(offset, true)
-    console.log('ambientIntensity', room.ambientIntensity)
-
     offset += 2
+
+    // !IMPORTANT! Skip TR2 stuff: AmbientIntensity2 & LightMode
+    offset += 4
 
     room.numLights = data.getUint16(offset, true)
     offset += 2
-    console.log('numLights', room.numLights)
     room.lights = new Array<tr.room_light>()
     for (let j = 0; j < room.numLights; j++) {
       room.lights.push(tr.ParseRoomLightTR2(data, offset))
@@ -135,7 +129,6 @@ export function parseLevel(data: DataView): tr.level {
 
     room.numStaticMeshes = data.getUint16(offset, true)
     offset += 2
-    console.log('numStaticMeshes', room.numStaticMeshes)
     room.staticMeshes = new Array<tr.room_staticmesh>()
     for (let j = 0; j < room.numStaticMeshes; j++) {
       room.staticMeshes.push(tr.ParseRoomStaticMeshTR2(data, offset))
@@ -143,14 +136,148 @@ export function parseLevel(data: DataView): tr.level {
     }
 
     room.alternateRoom = data.getInt16(offset, true)
-    console.log('alternateRoom', room.alternateRoom)
     offset += 2
     room.flags = data.getInt16(offset, true)
-    console.log('flags', room.flags)
     offset += 2
 
     level.rooms[roomNum] = room
   }
+
+  level.numFloorData = data.getUint32(offset, true)
+  offset += 4
+  level.floorData = new Array<tr.uint16_t>()
+  for (let i = 0; i < level.numFloorData; i++) {
+    level.floorData.push(data.getUint16(offset, true))
+    offset += 2
+  }
+
+  // WARNING! Parsing meshes is *different*, they are not 'packed' like the other data
+  // Extra comments here to help anyone that finds this code in the future!
+
+  // First get the total size of the mesh data block
+  const meshDataSize = data.getUint32(offset, true)
+  offset += 4
+
+  // Remember the start of the mesh data block, and skip over it
+  const meshOffsetStart = offset
+  offset += meshDataSize * 2
+
+  // Get number of meshPointers we need to do this first to know how many meshes there are
+  level.numMeshPointers = data.getUint32(offset, true)
+  offset += 4
+
+  // Now we can parse the meshPointers array and the meshes
+  level.meshPointers = new Array<tr.uint32_t>()
+  level.meshes = new Map<number, tr.mesh>()
+  for (let i = 0; i < level.numMeshPointers; i++) {
+    const meshPointer = data.getUint32(offset, true)
+    offset += 4
+    level.meshPointers.push(meshPointer)
+
+    // The value of the mesh pointer is actually the offset into the mesh data block!
+    const mesh = parseMesh(data, meshOffsetStart + meshPointer)
+
+    // Store the meshes in a map for easy access, indexed by the pointer
+    level.meshes.set(meshPointer, mesh)
+  }
+
+  level.numAnimations = data.getUint32(offset, true)
+  offset += 4
+  level.animations = new Array<tr.animation>()
+  for (let i = 0; i < level.numAnimations; i++) {
+    level.animations.push(tr.ParseAnimation(data, offset))
+    offset += tr.animation_size
+  }
+
+  const numStateChanges = data.getUint32(offset, true)
+  offset += 4
+  offset += numStateChanges * 6 // Skipped data
+
+  const numAnimDispatches = data.getUint32(offset, true)
+  offset += 4
+  offset += numAnimDispatches * 8 // Skipped data
+
+  const numAnimCommands = data.getUint32(offset, true)
+  offset += 4
+  offset += numAnimCommands * 2 // Skipped data
+
+  const numMeshTrees = data.getUint32(offset, true)
+  offset += 4
+  offset += numMeshTrees * 4 // Skipped data
+
+  const frameDataSize = data.getUint32(offset, true)
+  offset += 4
+  for (const anim of level.animations) {
+    // We parse a single frame it's all we need
+    anim.frames[0] = tr.ParseAnimFrame(data, offset + anim.frameOffset)
+  }
+  offset += frameDataSize * 2
+
+  level.numModels = data.getUint32(offset, true)
+  offset += 4
+  for (let i = 0; i < level.numModels; i++) {
+    const model = tr.ParseModel(data, offset)
+    level.models.set(model.id, model)
+    offset += tr.model_size
+  }
+
+  level.numStaticMeshes = data.getUint32(offset, true)
+  offset += 4
+  for (let i = 0; i < level.numStaticMeshes; i++) {
+    const staticMesh = tr.ParseStaticMesh(data, offset)
+    level.staticMeshes.set(staticMesh.id, staticMesh)
+    offset += tr.staticmesh_size
+  }
+
+  level.numObjectTextures = data.getUint32(offset, true)
+  offset += 4
+  for (let i = 0; i < level.numObjectTextures; i++) {
+    level.objectTextures.push(tr.ParseObjectTexture(data, offset))
+    offset += tr.object_texture_size
+  }
+
+  level.numSpriteTextures = data.getUint32(offset, true)
+  offset += 4
+  for (let i = 0; i < level.numSpriteTextures; i++) {
+    level.spriteTextures.push(tr.ParseSpriteTexture(data, offset))
+    offset += tr.sprite_texture_size
+  }
+
+  const numSpriteSequences = data.getUint32(offset, true)
+  offset += 4
+  offset += numSpriteSequences * 8 // Skipped data
+
+  const numCameras = data.getUint32(offset, true)
+  offset += 4
+  offset += numCameras * 16 // Skipped data
+
+  const numSoundSources = data.getUint32(offset, true)
+  offset += 4
+  offset += numSoundSources * 16 // Skipped data
+
+  const numBoxes = data.getUint32(offset, true)
+  offset += 4
+  offset += numBoxes * 8 // Skipped data
+
+  const numOverlaps = data.getUint32(offset, true)
+  offset += 4
+  offset += numOverlaps * 2 // Skipped data
+
+  // Ignore zones etc
+  offset += 20 * numBoxes // Skipped zone data
+
+  const numAnimatedTextures = data.getUint32(offset, true)
+  offset += 4
+  offset += numAnimatedTextures * 2 // Skipped data
+
+  level.numEntities = data.getUint32(offset, true)
+  offset += 4
+  for (let i = 0; i < level.numEntities; i++) {
+    level.entities.push(tr.ParseEntityTR2(data, offset))
+    offset += tr.entity_size_tr2
+  }
+
+  // Stop here - we don't need any more data from the file!
 
   return level
 }

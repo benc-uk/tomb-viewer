@@ -1,6 +1,6 @@
 // =============================================================================
 // Project: WebGL Tomb Raider
-// Main level parser, this is the entry point for parsing a level file
+// Main level parser, this is the entry point for parsing a TR level file
 // =============================================================================
 
 import * as TR1 from './tr1'

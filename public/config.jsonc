@@ -5,7 +5,7 @@
 
   // Camera settings
   "drawDistance": 40000,
-  "fov": 70,
+  "fov": 50,
   "speed": 120,
 
   // Lighting settings

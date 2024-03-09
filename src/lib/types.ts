@@ -425,6 +425,16 @@ export function ParseRoomStaticMeshTR2(data: DataView, offset: number): room_sta
   } as room_staticmesh
 }
 
+export function PrintRoom(r: room) {
+  console.log('Info:', r.info)
+  console.log(`Data: v:${r.roomData.numVertices} r:${r.roomData.numRectangles}, t:${r.roomData.numTriangles}, s:${r.roomData.numSprites}`)
+  console.log('Port/SecZ/SecX:', r.numPortals, r.numZSectors, r.numXSectors)
+  console.log('Amb/NumL:', r.ambientIntensity, r.numLights)
+  console.log('Num SMesh:', r.numStaticMeshes)
+  console.log('AltRoom:', r.alternateRoom)
+  console.log('Flags:', r.flags)
+}
+
 // =============================================================================
 // Meshes
 // =============================================================================
@@ -500,17 +510,19 @@ export function ParseModel(data: DataView, offset: number): model {
 // =============================================================================
 
 export type entity = {
-  type: uint16_t //Also known as "id"
+  type: uint16_t // Also known as the entity id
   room: uint16_t
   x: int32_t
   y: int32_t
   z: int32_t
   angle: int16_t
   intensity1: int16_t
+  intensity2: int16_t
   flags: uint16_t
 }
 
 export const entity_size = 22
+export const entity_size_tr2 = 24
 
 export function ParseEntity(data: DataView, offset: number): entity {
   return {
@@ -522,6 +534,20 @@ export function ParseEntity(data: DataView, offset: number): entity {
     angle: data.getInt16(offset + 16, true),
     intensity1: data.getInt16(offset + 18, true),
     flags: data.getInt16(offset + 20, true),
+  } as entity
+}
+
+export function ParseEntityTR2(data: DataView, offset: number): entity {
+  return {
+    type: data.getInt16(offset, true),
+    room: data.getInt16(offset + 2, true),
+    x: data.getInt32(offset + 4, true),
+    y: data.getInt32(offset + 8, true),
+    z: data.getInt32(offset + 12, true),
+    angle: data.getInt16(offset + 16, true),
+    intensity1: data.getInt16(offset + 18, true),
+    intensity2: data.getInt16(offset + 20, true),
+    flags: data.getInt16(offset + 22, true),
   } as entity
 }
 
@@ -570,7 +596,7 @@ export type room_light = {
 }
 
 export const room_light_size = 18
-export const room_light_size_tr2 = 24
+export const room_light_size_tr2 = room_light_size + 4 + 2
 
 export function ParseRoomLight(data: DataView, offset: number): room_light {
   return {
@@ -684,23 +710,23 @@ export type anim_frame = {
 type pair = [number, number]
 
 export function ParseAnimFrame(data: DataView, offset: number): anim_frame {
+  // FIXME: Angle sets are broken! BUt we don't use them for now
+
+  // Angle sets are pairs of words, there are numValues of pairs of 16 bit words
   const numValues = data.getUint16(offset + 18, true)
-
   const angleSets = new Array<pair>(numValues)
-  // Angle sets are pairs of words, theres numValues of pairs of 16 bit words
-  for (let i = 0; i < numValues; i++) {
-    const data1 = data.getUint16(offset + 20 + i * 2, true)
-    const data2 = data.getUint16(offset + 20 + i * 2 + 2, true)
-
-    angleSets[i] = [data1, data2]
-  }
+  // for (let i = 0; i < numValues; i++) {
+  //   const data1 = data.getUint16(offset + 20 + i * 2, true)
+  //   const data2 = data.getUint16(offset + 20 + i * 2 + 2, true)
+  //   angleSets[i] = [data1, data2]
+  // }
 
   return {
     box: ParseBoundingBox(data, offset),
     offsetX: data.getInt16(offset + 12, true),
     offsetY: data.getInt16(offset + 14, true),
     offsetZ: data.getInt16(offset + 16, true),
-    numValues: numValues,
+    numValues: 0,
     angleSets: angleSets,
     bytes: bounding_box_size + 8 + numValues * 2,
   } as anim_frame

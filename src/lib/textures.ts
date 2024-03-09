@@ -3,7 +3,7 @@
 // Helpers for working with textures and textiles
 // =============================================================================
 
-import { textile16, textile8, textile8_size, textile16_size, colour, colour4 } from './types'
+import { textile16, textile8, textile8_size, textile16_size, colour, level, version } from './types'
 
 /**
  * Return a tr_textile8 as a ArrayBuffer
@@ -101,4 +101,23 @@ export function bufferToCanvas(buffer: ArrayBuffer, width: number, height: numbe
   ctx.putImageData(imgData, 0, 0)
 
   return canvas
+}
+
+export function debugTextiles(level: level) {
+  document.body.style.overflow = 'auto'
+
+  document.querySelectorAll('canvas')?.forEach((c) => c.remove())
+  if (level.version === version.TR1) {
+    for (let i = 0; i < level.textiles.length; i++) {
+      const buffer = textile8ToBuffer(level.textiles[i], level.palette)
+      const can = bufferToCanvas(buffer, 256, 256)
+      document.body.prepend(can)
+    }
+  } else {
+    for (let i = 0; i < level.textiles16.length; i++) {
+      const buffer = textile16ToBuffer(level.textiles16[i])
+      const can = bufferToCanvas(buffer, 256, 256)
+      document.body.prepend(can)
+    }
+  }
 }

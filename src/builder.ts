@@ -6,10 +6,10 @@
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { bufferToCanvas, getRegionFromBuffer, textile16ToBuffer, textile8ToBuffer } from './lib/textures'
+import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { AppConfig } from './config'
-import { isEntityInCategory, PickupSpriteLookup } from './lib/entity'
+import { isEntityInCategory, pickupSpriteLookup } from './lib/entity'
 
 export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -19,16 +19,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
   // Kinda important! Parse the level data into a TR level data structure
   const level = parseLevel(data)
-
-  // 🔥🔥🔥🔥🔥🔥🔥🔥🔥
-  // DEBUG DUMP TEXTILES
-  // 🔥🔥🔥🔥🔥🔥🔥🔥🔥
-  // for (let i = 0; i < level.textiles.length; i++) {
-  //   const buffer = textile8ToBuffer(level.textiles[i], level.palette)
-  //   // const buffer = textile16ToBuffer(level.textiles16[i])
-  //   // console.log(`🖼️ Dumping textile ${i} to canvas`, buffer)
-  //   document.body.prepend(bufferToCanvas(buffer, 256, 256))
-  // }
 
   // Clear the world, lights and texture cache for when we load a new level
   ctx.removeAllInstances()
@@ -55,6 +45,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   }
 
   // Create all sprite materials
+  let spriteId = 0
+  document.querySelectorAll('.sprite').forEach((e) => e.remove())
   for (const sprite of level.spriteTextures) {
     const w = Math.round(sprite.width / 256)
     const h = Math.round(sprite.height / 256)
@@ -68,6 +60,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     mat.emissive = [1, 1, 1]
     mat.alphaCutoff = 0.5
     spriteMaterials.push(mat)
+    spriteId++
   }
 
   // Create all GSOTS models for meshes
@@ -109,6 +102,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
       // Texture coordinates are in the bizarrely named objectTextures
       const objTexture = level.objectTextures[rect.texture]
+      if (!objTexture) {
+        console.debug(`💥 Error: Missing texture for rect ${rect.texture} in room ${roomNum}`)
+        continue
+      }
 
       // First 14 bits (little endian) of tileAndFlag is the index into the textile array
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
@@ -195,6 +192,11 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
       // Texture coordinates logic same as rectangles
       const objTexture = level.objectTextures[tri.texture]
+      if (!objTexture) {
+        console.debug(`💥 Error: Missing texture for tri ${tri.texture} in room ${roomNum}`)
+        continue
+      }
+
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
       // Get the UV of the four corners in objTexture.vertices
@@ -237,7 +239,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     // Add room lights
-    // NOTE: These are not added to the roomNode and directly to the world
+    // NOTE: These are not added to the roomNode but directly to the world
     for (const light of room.lights) {
       const lightPos = [light.x, -light.y, -light.z] as XYZ
 
@@ -255,7 +257,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       roomLight.metadata.intensity = light.intensity / 0x1fff
     }
 
-    // Now sprites
+    // Static scenic sprites, these are only really used in TR1 and only in a few levels
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
@@ -268,13 +270,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Find the staticMesh, *weird* we have to do a search here, normally IDs are array indexes
       const staticMesh = level.staticMeshes.get(roomStaticMesh.meshId)
       if (!staticMesh) {
-        console.warn(`🤔 Room static mesh not found: ${roomStaticMesh.meshId}`)
+        console.debug(`🤔 Room static mesh not found: ${roomStaticMesh.meshId}`)
         continue
       }
 
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
-
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
 
       // We have move the mesh to the room position with the reverse of the room position
@@ -286,7 +287,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     roomNode.enabled = false
   }
 
-  // END: Room loop
+  // END: Room loop, phew!
 
   // Hide alternate rooms
   for (const [_, roomNode] of roomNodes) {
@@ -300,10 +301,13 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // We need to invert the room offsets, as we later add the entity to the room node
     const entityPos = [entity.x - level.rooms[entity.room].info.x, -entity.y, -entity.z + level.rooms[entity.room].info.z] as XYZ
 
-    // Pickups rendered as sprites, special case
+    // Pickups are rendered as sprites, special case
     if (isEntityInCategory(entity, 'Pickup', level.version)) {
-      const spriteId = PickupSpriteLookup[level.version]?.get(entity.type) || 0
+      // The sprite ID is the type of the entity, except when it's not!
+      const spriteId = pickupSpriteLookup[level.version]?.get(entity.type) || 0
+
       const spriteInst = createSpriteInst(entityPos, spriteId, level.spriteTextures, spriteMaterials, ctx)
+      spriteInst.scale = [spriteInst.scale[0] * 1.5, spriteInst.scale[1] * 1.5, spriteInst.scale[2] * 1.5]
       roomNodes.get(entity.room)?.addChild(spriteInst)
       continue
     }
@@ -314,8 +318,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     // Other entities are OK, so we find the model
-    const modelId = entity.type
-    const model = level.models.get(modelId)
+
+    // Models are matched 1:1 with entities, so use entity type as the model ID
+    const model = level.models.get(entity.type)
     if (!model) {
       continue
     }
@@ -342,10 +347,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   // Find the entity with ID type 0 this is Lara and the start point
   const lara = level.entities.find((e) => isEntityInCategory(e, 'Lara', level.version))
   if (lara) {
+    console.log(`👩 Lara entity found at ${lara.x}, ${lara.y}, ${lara.z}`)
     ctx.camera.position = [lara.x, -lara.y + 768, -lara.z] as XYZ
 
     let camAngle = entityAngleToDeg(lara.angle) * (Math.PI / 180)
     ctx.camera.enableFPControls(camAngle, -0.2, 0.002, config.speed, true)
+  } else {
+    console.error(`💥 Error: No Lara entity found in level! Falling back to room 0`)
+    const room0 = level.rooms[0].info
+    ctx.camera.position = [room0.x, 0, -room0.z] as XYZ
+    ctx.camera.enableFPControls(0, -0.2, 0.002, config.speed, true)
   }
 
   // Allow the config to override the start position
@@ -417,9 +428,15 @@ function createSpriteInst(
   spriteInst.scale = [1, aspect, 1]
   spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
 
-  // TODO: Hacks to fix vines and other sprites that hang from the ceiling
-  if (levelName === 'TR1/01-Caves.PHD' && spriteId === 175) {
-    spriteInst.position[1] -= 3056
+  // Fix vines in the first few TR1 levels
+  if (levelName === 'TR1/01-Caves.PHD' && (spriteId === 147 || spriteId === 148)) {
+    spriteInst.position[1] -= 2200
+  }
+  if (levelName === 'TR1/02-City-of-Vilcabamba.PHD' && (spriteId === 155 || spriteId === 156)) {
+    spriteInst.position[1] -= 2200
+  }
+  if (levelName === 'TR1/03-The-Lost-Valley.PHD' && (spriteId === 143 || spriteId === 144)) {
+    spriteInst.position[1] -= 2200
   }
 
   return spriteInst
@@ -435,6 +452,10 @@ function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, mater
   // First pass is creating the parts for each textile contained in the mesh
   for (const rect of mesh.texturedRectangles) {
     const objTexture = level.objectTextures[rect.texture]
+    if (!objTexture) {
+      console.debug(`💥 Error: Missing texture for rect ${rect.texture} in mesh ${meshId}`)
+      continue
+    }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
     if (!parts.get(texTileIndex)) {
@@ -444,6 +465,10 @@ function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, mater
 
   for (const tri of mesh.texturedTriangles) {
     const objTexture = level.objectTextures[tri.texture]
+    if (!objTexture) {
+      console.debug(`💥 Error: Missing texture for tri ${tri.texture} in mesh ${meshId}`)
+      continue
+    }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
     if (!parts.get(texTileIndex)) {
@@ -458,6 +483,10 @@ function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, mater
     const v4 = trVertToXZY(mesh.vertices[rect.vertices[3]])
 
     const objTexture = level.objectTextures[rect.texture]
+    if (!objTexture) {
+      console.debug(`💥 Error: Missing texture for rect ${rect.texture} in mesh ${meshId}`)
+      continue
+    }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
     // Get texture UV from objTexture.vertices
@@ -480,6 +509,10 @@ function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, mater
     const v3 = trVertToXZY(mesh.vertices[tri.vertices[2]])
 
     const objTexture = level.objectTextures[tri.texture]
+    if (!objTexture) {
+      console.debug(`💥 Error: Missing texture for rect ${tri.texture} in mesh ${meshId}`)
+      continue
+    }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
     // Get texture UV from objTexture.vertices

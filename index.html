@@ -12,11 +12,19 @@
   <body x-data="app" @keydown.h="showHelp = !showHelp">
     <div id="controls" class="blurbox">
       <details>
-        <summary>⚙️</summary>
+        <summary>🛠️</summary>
         <br />
         <div class="flex-row">
           <label for="bright"> Brightness</label>
-          <input type="range" mix="0.1" max="2.5" step="0.01" id="bright" @change="brightness" />
+          <input type="range" min="0.1" max="2.5" step="0.01" id="bright" x-model="brightness" />
+        </div>
+        <div class="flex-row">
+          <label for="fov"> FOV</label>
+          <input type="range" min="30" max="90" step="1" id="fov" x-model="fov" />
+        </div>
+        <div class="flex-row">
+          <label for="speed"> Speed</label>
+          <input type="range" min="50" max="400" step="1" id="speed" x-model="speed" />
         </div>
         <div class="flex-row">
           <label for="texFilt"> Filtering</label>
@@ -94,7 +102,7 @@
         <option value="TR2/14-Ice-Palace.TR2">14 Ice Palace</option>
         <option value="TR2/15-Temple-of-Xian.TR2">15 Temple of Xian</option>
         <option value="TR2/16-Floating-Islands.TR2">16 Floating Islands</option>
-        <option value="TR2/17-The-Dragons-Lair">17 The Dragon's Lair</option>
+        <option value="TR2/17-The-Dragons-Lair.TR2">17 The Dragon's Lair</option>
         <option value="TR2/18-Home-Sweet-Home.TR2">18 Home Sweet Home</option>
         <option value="TR2/00-Laras-Home.TR2">00 Laras Home</option>
       </select>

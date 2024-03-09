@@ -6,7 +6,7 @@ It is written entirely in TypeScript with Vite.js and uses my own [GSOTS3D](http
 
 Status:
 
-- Tomb Raider 1 support only
+- Tomb Raider 1 & 2 support only
 - Level file parsing (for all the parts I need)
 - Texture data loaded from level file
 - Level geometry rendered with textures and normals
@@ -23,9 +23,9 @@ Status:
 
 Todo:
 
-- Tomb Raider 2
 - Tomb Raider 3
-- Implement the whole game (not happening 🫠)
+- Tomb Raider 4 & 5 but unlikey
+- Implement the whole game (absolutely not happening 🫠)
 
 # 🌐 Try It
 

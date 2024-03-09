@@ -957,9 +957,1191 @@ const tr1Data = [
   },
 ] as Entity[]
 
+const tr2Data = [
+  {
+    id: 0,
+    name: 'Lara',
+    categories: ['Lara'],
+  },
+  {
+    id: 1,
+    name: 'LaraPistolsAnim',
+  },
+  {
+    id: 2,
+    name: 'LaraPonytail',
+  },
+  {
+    id: 3,
+    name: 'LaraShotgunAnim',
+  },
+  {
+    id: 4,
+    name: 'LaraAutopistolsAnim',
+  },
+  {
+    id: 5,
+    name: 'LaraUzisAnim',
+  },
+  {
+    id: 6,
+    name: 'LaraM16Anim',
+  },
+  {
+    id: 7,
+    name: 'LaraGrenadeLauncherAnim',
+  },
+  {
+    id: 8,
+    name: 'LaraHarpoonGunAnim',
+  },
+  {
+    id: 9,
+    name: 'LaraFlareAnim',
+  },
+  {
+    id: 10,
+    name: 'LaraSnowmobileAnim',
+  },
+  {
+    id: 11,
+    name: 'LaraBoatAnim',
+  },
+  {
+    id: 12,
+    name: 'AlternativeLara',
+  },
+  {
+    id: 13,
+    name: 'Skidoo',
+    categories: ['Vehicle'],
+  },
+  {
+    id: 14,
+    name: 'Boat',
+    categories: ['Vehicle'],
+  },
+  {
+    id: 15,
+    name: 'Dog',
+    categories: ['Entity'],
+  },
+  {
+    id: 16,
+    name: 'Masked Goon 1',
+    categories: ['Entity'],
+  },
+  {
+    id: 17,
+    name: 'Masked Goon 2',
+    categories: ['Entity'],
+  },
+  {
+    id: 18,
+    name: 'Masked Goon 3',
+    categories: ['Entity'],
+  },
+  {
+    id: 19,
+    name: 'Knife thrower',
+    categories: ['Entity'],
+  },
+  {
+    id: 20,
+    name: 'Shotgun Goon',
+    categories: ['Entity'],
+  },
+  {
+    id: 21,
+    name: 'Rat',
+    categories: ['Entity'],
+  },
+  {
+    id: 22,
+    name: 'DragonFront',
+    categories: ['Entity'],
+  },
+  {
+    id: 23,
+    name: 'DragonBack',
+    categories: ['Entity'],
+  },
+  {
+    id: 24,
+    name: 'Gondola',
+    categories: ['Scenery'],
+  },
+  {
+    id: 25,
+    name: 'Shark',
+    categories: ['Entity'],
+  },
+  {
+    id: 26,
+    name: 'Yellow Eel',
+    categories: ['Entity'],
+  },
+  {
+    id: 27,
+    name: 'Black Eel',
+    categories: ['Entity'],
+  },
+  {
+    id: 28,
+    name: 'Barracuda',
+    categories: ['Entity'],
+  },
+  {
+    id: 29,
+    name: 'Scuba Diver',
+    categories: ['Entity'],
+  },
+  {
+    id: 30,
+    name: 'Shotgun Goon',
+    categories: ['Entity'],
+  },
+  {
+    id: 31,
+    name: 'Rifle Goon',
+    categories: ['Entity'],
+  },
+  {
+    id: 32,
+    name: 'Stick Goon 1',
+    categories: ['Entity'],
+  },
+  {
+    id: 33,
+    name: 'Stick Goon 2',
+    categories: ['Entity'],
+  },
+  {
+    id: 34,
+    name: 'Flamethrower',
+    categories: ['Entity'],
+  },
+  {
+    id: 36,
+    name: 'Spider',
+    categories: ['Entity'],
+  },
+  {
+    id: 37,
+    name: 'Giant Spider',
+    categories: ['Entity'],
+  },
+  {
+    id: 38,
+    name: 'Crow',
+    categories: ['Entity'],
+  },
+  {
+    id: 39,
+    name: 'Tiger/Leopard',
+    categories: ['Entity'],
+  },
+  {
+    id: 40,
+    name: 'Bartoli',
+    categories: ['Entity'],
+  },
+  {
+    id: 41,
+    name: 'Guard (Spear)',
+    categories: ['Entity'],
+  },
+  {
+    id: 42,
+    name: 'XianGuardSpearStatue',
+    categories: ['Entity'],
+  },
+  {
+    id: 43,
+    name: 'Guard (Sword)',
+    categories: ['Entity'],
+  },
+  {
+    id: 44,
+    name: 'XianGuardSwordStatue',
+    categories: ['Entity'],
+  },
+  {
+    id: 45,
+    name: 'Yeti',
+    categories: ['Entity'],
+  },
+  {
+    id: 46,
+    name: 'Guardian',
+    categories: ['Entity'],
+  },
+  {
+    id: 47,
+    name: 'Eagle',
+    categories: ['Entity'],
+  },
+  {
+    id: 48,
+    name: 'Mercenary 1',
+    categories: ['Entity'],
+  },
+  {
+    id: 49,
+    name: 'Mercenary 2',
+    categories: ['Entity'],
+  },
+  {
+    id: 50,
+    name: 'Mercenary 3',
+    categories: ['Entity'],
+  },
+  {
+    id: 51,
+    name: 'Black Skidoo',
+    categories: ['Entity'],
+  },
+  {
+    id: 52,
+    name: 'Skidoo Driver',
+    categories: ['Entity'],
+  },
+  {
+    id: 53,
+    name: 'Monk 1',
+    categories: ['Entity'],
+  },
+  {
+    id: 54,
+    name: 'Monk 2',
+    categories: ['Entity'],
+  },
+  {
+    id: 55,
+    name: 'Breakable Tile',
+    categories: ['Trap'],
+  },
+  {
+    id: 57,
+    name: 'Loose Boards',
+    categories: ['Trap'],
+  },
+  {
+    id: 58,
+    name: 'Swinging Sandbag',
+    categories: ['Trap'],
+  },
+  {
+    id: 59,
+    name: 'Spikes',
+    categories: ['Trap'],
+  },
+  {
+    id: 60,
+    name: 'Boulder',
+    categories: ['Trap'],
+  },
+  {
+    id: 61,
+    name: 'Dart',
+    categories: ['Trap'],
+  },
+  {
+    id: 62,
+    name: 'Dart Emitter',
+    categories: ['Trap'],
+  },
+  {
+    id: 63,
+    name: 'Drawbridge',
+    categories: ['Trapdoor', 'Door'],
+  },
+  {
+    id: 64,
+    name: 'Slamming Doors',
+    categories: ['Trap'],
+  },
+  {
+    id: 65,
+    name: 'Elevator',
+    categories: ['Movable'],
+  },
+  {
+    id: 66,
+    name: 'Minisub',
+    categories: ['Scenery'],
+  },
+  {
+    id: 67,
+    name: 'Pushable Block 1',
+    categories: ['Movable'],
+  },
+  {
+    id: 68,
+    name: 'Pushable Block 2',
+    categories: ['Movable'],
+  },
+  {
+    id: 69,
+    name: 'Pushable Block 3',
+    categories: ['Movable'],
+  },
+  {
+    id: 70,
+    name: 'Pushable Block 4',
+    categories: ['Movable'],
+  },
+  {
+    id: 71,
+    name: 'Lava bowl',
+    categories: ['Scenery'],
+  },
+  {
+    id: 72,
+    name: 'Breakable Window',
+    categories: ['Scenery'],
+  },
+  {
+    id: 73,
+    name: 'Breakable Window',
+    categories: ['Scenery'],
+  },
+  {
+    id: 76,
+    name: 'Propeller',
+    categories: ['Trap'],
+  },
+  {
+    id: 77,
+    name: 'PowerSaw',
+    categories: ['Trap'],
+  },
+  {
+    id: 78,
+    name: 'Hook',
+    categories: ['Trap'],
+  },
+  {
+    id: 79,
+    name: 'Falling Ceiling',
+    categories: ['Trap'],
+  },
+  {
+    id: 80,
+    name: 'Rolling Spindle',
+    categories: ['Trap'],
+  },
+  {
+    id: 81,
+    name: 'Wall Blade',
+    categories: ['Trap'],
+  },
+  {
+    id: 82,
+    name: 'Statue Blade',
+    categories: ['Trap'],
+  },
+  {
+    id: 83,
+    name: 'Boulders',
+    categories: ['Trap'],
+  },
+  {
+    id: 84,
+    name: 'Icicles',
+    categories: ['Trap'],
+  },
+  {
+    id: 85,
+    name: 'Spike Wall',
+    categories: ['Trap'],
+  },
+  {
+    id: 86,
+    name: 'Springboard',
+    categories: ['Trap'],
+  },
+  {
+    id: 87,
+    name: 'Spike Ceiling',
+    categories: ['Trap'],
+  },
+  {
+    id: 88,
+    name: 'Bell',
+    categories: ['Scenery'],
+  },
+  {
+    id: 89,
+    name: 'BoatWake',
+  },
+  {
+    id: 90,
+    name: 'SnowmobileWake',
+  },
+  {
+    id: 91,
+    name: 'SnowmobileBelt',
+  },
+  {
+    id: 92,
+    name: 'Wheel Door',
+    categories: ['Door'],
+  },
+  {
+    id: 93,
+    name: 'Small Switch',
+    categories: ['Switch'],
+  },
+  {
+    id: 94,
+    name: 'Underwater Fan',
+    categories: ['Trap'],
+  },
+  {
+    id: 95,
+    name: 'Fan',
+    categories: ['Trap'],
+  },
+  {
+    id: 96,
+    name: 'Swinging Box',
+    categories: ['Trap'],
+  },
+  {
+    id: 97,
+    name: 'CutsceneActor1',
+    categories: ['Entity'],
+  },
+  {
+    id: 98,
+    name: 'CutsceneActor2',
+    categories: ['Entity'],
+  },
+  {
+    id: 99,
+    name: 'CutsceneActor3',
+    categories: ['Entity'],
+  },
+  {
+    id: 100,
+    name: 'UIFrame',
+  },
+  {
+    id: 101,
+    name: 'Rolling Barrels',
+    categories: ['Trap'],
+  },
+  {
+    id: 102,
+    name: 'Zipline',
+    categories: ['Vehicle'],
+  },
+  {
+    id: 103,
+    name: 'Button',
+    categories: ['Switch'],
+  },
+  {
+    id: 104,
+    name: 'Wall Switch',
+    categories: ['Switch'],
+  },
+  {
+    id: 105,
+    name: 'Underwater Lever',
+    categories: ['Switch'],
+  },
+  {
+    id: 106,
+    name: 'Door 1',
+    categories: ['Door'],
+  },
+  {
+    id: 107,
+    name: 'Door 2',
+    categories: ['Door'],
+  },
+  {
+    id: 108,
+    name: 'Door 3',
+    categories: ['Door'],
+  },
+  {
+    id: 109,
+    name: 'Door 4',
+    categories: ['Door'],
+  },
+  {
+    id: 110,
+    name: 'Door 5',
+    categories: ['Door'],
+  },
+  {
+    id: 111,
+    name: 'Door 6',
+    categories: ['Door'],
+  },
+  {
+    id: 112,
+    name: 'Door 7',
+    categories: ['Door'],
+  },
+  {
+    id: 113,
+    name: 'Door 8',
+    categories: ['Door'],
+  },
+  {
+    id: 114,
+    name: 'Trapdoor 1',
+    categories: ['Door', 'Trapdoor'],
+  },
+  {
+    id: 115,
+    name: 'Trapdoor 2',
+    categories: ['Door', 'Trapdoor'],
+  },
+  {
+    id: 116,
+    name: 'Trapdoor 3',
+    categories: ['Door', 'Trapdoor'],
+  },
+  {
+    id: 117,
+    name: 'Bridge (Flat)',
+    categories: ['Scenery'],
+  },
+  {
+    id: 118,
+    name: 'Bridge (Tilt 1)',
+    categories: ['Scenery'],
+  },
+  {
+    id: 119,
+    name: 'Bridge (Tilt 2)',
+    categories: ['Scenery'],
+  },
+  {
+    id: 120,
+    name: 'PassportOpening',
+  },
+  {
+    id: 121,
+    name: 'Compass',
+  },
+  {
+    id: 122,
+    name: 'LarasHomePolaroid',
+  },
+  {
+    id: 123,
+    name: 'CutsceneActor4',
+    categories: ['Entity'],
+  },
+  {
+    id: 124,
+    name: 'CutsceneActor5',
+    categories: ['Entity'],
+  },
+  {
+    id: 125,
+    name: 'CutsceneActor6',
+    categories: ['Entity'],
+  },
+  {
+    id: 126,
+    name: 'CutsceneActor7',
+    categories: ['Entity'],
+  },
+  {
+    id: 127,
+    name: 'CutsceneActor8',
+    categories: ['Entity'],
+  },
+  {
+    id: 128,
+    name: 'CutsceneActor9',
+    categories: ['Entity'],
+  },
+  {
+    id: 129,
+    name: 'CutsceneActor10',
+    categories: ['Entity'],
+  },
+  {
+    id: 130,
+    name: 'CutsceneActor11',
+    categories: ['Entity'],
+  },
+  {
+    id: 133,
+    name: 'PassportClosed',
+    categories: ['Entity'],
+  },
+  {
+    id: 134,
+    name: 'Map',
+  },
+  {
+    id: 135,
+    name: 'Pistols',
+    categories: ['Pickup'],
+  },
+  {
+    id: 136,
+    name: 'Shotgun',
+    categories: ['Pickup'],
+  },
+  {
+    id: 137,
+    name: 'Auto pistols',
+    categories: ['Pickup'],
+  },
+  {
+    id: 138,
+    name: 'Uzis',
+    categories: ['Pickup'],
+  },
+  {
+    id: 139,
+    name: 'Harpoon Gun',
+    categories: ['Pickup'],
+  },
+  {
+    id: 140,
+    name: 'M16',
+    categories: ['Pickup'],
+  },
+  {
+    id: 141,
+    name: 'Grenade launcher',
+    categories: ['Pickup'],
+  },
+  {
+    id: 142,
+    name: 'PistolAmmoSprite',
+    categories: ['Pickup'],
+  },
+  {
+    id: 143,
+    name: 'Shotgun shells',
+    categories: ['Pickup'],
+  },
+  {
+    id: 144,
+    name: 'Auto pistol ammo',
+    categories: ['Pickup'],
+  },
+  {
+    id: 145,
+    name: 'Uzi ammo',
+    categories: ['Pickup'],
+  },
+  {
+    id: 146,
+    name: 'Harpoons',
+    categories: ['Pickup'],
+  },
+  {
+    id: 147,
+    name: 'M16 ammo',
+    categories: ['Pickup'],
+  },
+  {
+    id: 148,
+    name: 'Grenades',
+    categories: ['Pickup'],
+  },
+  {
+    id: 149,
+    name: 'Small medipack',
+    categories: ['Pickup'],
+  },
+  {
+    id: 150,
+    name: 'Large medipack',
+    categories: ['Pickup'],
+  },
+  {
+    id: 151,
+    name: 'Flares',
+    categories: ['Pickup'],
+  },
+  {
+    id: 152,
+    name: 'Flare',
+    categories: ['Pickup'],
+  },
+  {
+    id: 153,
+    name: 'Sunglasses',
+  },
+  {
+    id: 154,
+    name: 'CassettePlayer',
+  },
+  {
+    id: 155,
+    name: 'DirectionKeys',
+  },
+  {
+    id: 157,
+    name: 'Pistols',
+  },
+  {
+    id: 158,
+    name: 'Shotgun',
+  },
+  {
+    id: 159,
+    name: 'Autopistols',
+  },
+  {
+    id: 160,
+    name: 'Uzis',
+  },
+  {
+    id: 161,
+    name: 'HarpoonGun',
+  },
+  {
+    id: 162,
+    name: 'M16',
+  },
+  {
+    id: 163,
+    name: 'GrenadeLauncher',
+  },
+  {
+    id: 164,
+    name: 'PistolAmmo',
+  },
+  {
+    id: 165,
+    name: 'ShotgunAmmo',
+  },
+  {
+    id: 166,
+    name: 'AutopistolAmmo',
+  },
+  {
+    id: 167,
+    name: 'UziAmmo',
+  },
+  {
+    id: 168,
+    name: 'HarpoonGunAmmo',
+  },
+  {
+    id: 169,
+    name: 'M16Ammo',
+  },
+  {
+    id: 170,
+    name: 'GrenadeLauncherAmmo',
+  },
+  {
+    id: 171,
+    name: 'SmallMedipack',
+  },
+  {
+    id: 172,
+    name: 'LargeMedipack',
+  },
+  {
+    id: 173,
+    name: 'Flares',
+    categories: ['Pickup'],
+  },
+  {
+    id: 174,
+    name: 'Puzzle 1',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 175,
+    name: 'Puzzle 2',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 176,
+    name: 'Puzzle 3',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 177,
+    name: 'Puzzle 4',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 178,
+    name: 'Puzzle 1',
+  },
+  {
+    id: 179,
+    name: 'Puzzle 2',
+  },
+  {
+    id: 180,
+    name: 'Puzzle 3',
+  },
+  {
+    id: 181,
+    name: 'Puzzle 4',
+  },
+  {
+    id: 182,
+    name: 'Slot 1',
+    categories: ['Slot'],
+  },
+  {
+    id: 183,
+    name: 'Slot 2',
+    categories: ['Slot'],
+  },
+  {
+    id: 184,
+    name: 'Slot 3',
+    categories: ['Slot'],
+  },
+  {
+    id: 185,
+    name: 'Slot 4',
+    categories: ['Slot'],
+  },
+  {
+    id: 186,
+    name: 'Slot 1 Done',
+    categories: ['Slot'],
+  },
+  {
+    id: 187,
+    name: 'Slot 2 Done',
+    categories: ['Slot'],
+  },
+  {
+    id: 188,
+    name: 'Slot 3 Done',
+    categories: ['Slot'],
+  },
+  {
+    id: 189,
+    name: 'Slot 4 Done',
+    categories: ['Slot'],
+  },
+  {
+    id: 190,
+    name: 'Secret (Gold)',
+    categories: ['Pickup'],
+  },
+  {
+    id: 191,
+    name: 'Secret (Jade)',
+    categories: ['Pickup'],
+  },
+  {
+    id: 192,
+    name: 'Secret (Stone)',
+    categories: ['Pickup'],
+  },
+  {
+    id: 193,
+    name: 'Key 1',
+    categories: ['Pickup', 'Key'],
+  },
+  {
+    id: 194,
+    name: 'Key 2',
+    categories: ['Pickup', 'Key'],
+  },
+  {
+    id: 195,
+    name: 'Key 3',
+    categories: ['Pickup', 'Key'],
+  },
+  {
+    id: 196,
+    name: 'Key 4',
+    categories: ['Pickup', 'Key'],
+  },
+  {
+    id: 197,
+    name: 'Key 1',
+  },
+  {
+    id: 198,
+    name: 'Key 2',
+  },
+  {
+    id: 199,
+    name: 'Key 3',
+  },
+  {
+    id: 200,
+    name: 'Key 4',
+  },
+  {
+    id: 201,
+    name: 'Keyhole 1',
+    categories: ['Keyhole'],
+  },
+  {
+    id: 202,
+    name: 'Keyhole 2',
+    categories: ['Keyhole'],
+  },
+  {
+    id: 203,
+    name: 'Keyhole 3',
+    categories: ['Keyhole'],
+  },
+  {
+    id: 204,
+    name: 'Keyhole 4',
+    categories: ['Keyhole'],
+  },
+  {
+    id: 205,
+    name: 'Quest Item 1',
+    categories: ['Pickup'],
+  },
+  {
+    id: 206,
+    name: 'The Talion',
+    categories: ['Pickup'],
+  },
+  {
+    id: 207,
+    name: 'QuestItem1',
+    categories: ['Pickup'],
+  },
+  {
+    id: 208,
+    name: 'QuestItem2',
+    categories: ['Pickup'],
+  },
+  {
+    id: 209,
+    name: 'DragonExplosionEffect',
+  },
+  {
+    id: 210,
+    name: 'DragonExplosionEffect2',
+  },
+  {
+    id: 211,
+    name: 'DragonExplosionEffect3',
+  },
+  {
+    id: 212,
+    name: 'Alarm',
+    categories: ['Effect'],
+  },
+  {
+    id: 213,
+    name: 'Dripping Water',
+    categories: ['Effect'],
+  },
+  {
+    id: 214,
+    name: 'T-Rex',
+    categories: ['Entity'],
+  },
+  {
+    id: 215,
+    name: 'Singing Birds',
+    categories: ['Effect'],
+  },
+  {
+    id: 216,
+    name: 'BartoliHideoutClock',
+    categories: ['Effect'],
+  },
+  {
+    id: 217,
+    name: 'Placeholder',
+  },
+  {
+    id: 218,
+    name: 'DragonBonesFront',
+  },
+  {
+    id: 219,
+    name: 'DragonBonesBack',
+  },
+  {
+    id: 220,
+    name: 'ExtraFire',
+  },
+  {
+    id: 222,
+    name: 'Mine',
+    categories: ['Trap'],
+  },
+  {
+    id: 223,
+    name: 'MenuBackground',
+  },
+  {
+    id: 224,
+    name: 'GrayDisk',
+    categories: ['Trap'],
+  },
+  {
+    id: 225,
+    name: 'GongStick',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 226,
+    name: 'Gong',
+    categories: ['Slot'],
+  },
+  {
+    id: 227,
+    name: 'Detonator',
+    categories: ['Pickup', 'Puzzle'],
+  },
+  {
+    id: 228,
+    name: 'Helicopter',
+    categories: ['Scenery'],
+  },
+  {
+    id: 229,
+    name: 'Explosion',
+  },
+  {
+    id: 230,
+    name: 'Splash',
+  },
+  {
+    id: 231,
+    name: 'Bubbles',
+  },
+  {
+    id: 233,
+    name: 'Blood',
+  },
+  {
+    id: 235,
+    name: 'FlareSparkles',
+  },
+  {
+    id: 236,
+    name: 'Glow',
+  },
+  {
+    id: 238,
+    name: 'Ricochet',
+  },
+  {
+    id: 240,
+    name: 'Gunflare',
+  },
+  {
+    id: 241,
+    name: 'M16Gunflare',
+  },
+  {
+    id: 243,
+    name: 'Camera Target',
+    categories: ['Effect'],
+  },
+  {
+    id: 244,
+    name: 'Waterfall Mist',
+    categories: ['Effect'],
+  },
+  {
+    id: 245,
+    name: 'Harpoon',
+  },
+  {
+    id: 247,
+    name: 'Placeholder',
+  },
+  {
+    id: 248,
+    name: 'GrenadeSingle',
+  },
+  {
+    id: 249,
+    name: 'HarpoonFlying',
+  },
+  {
+    id: 250,
+    name: 'LavaParticles',
+  },
+  {
+    id: 251,
+    name: 'Lava Emitter',
+    categories: ['Trap'],
+  },
+  {
+    id: 252,
+    name: 'Flame',
+  },
+  {
+    id: 253,
+    name: 'Flame Emitter',
+    categories: ['Fire'],
+  },
+  {
+    id: 254,
+    name: 'Skybox',
+  },
+  {
+    id: 255,
+    name: 'FontGraphics',
+  },
+  {
+    id: 256,
+    name: 'Monk',
+    categories: ['Entity'],
+  },
+  {
+    id: 257,
+    name: 'Doorbell',
+    categories: ['Effect'],
+  },
+  {
+    id: 258,
+    name: 'AlarmBell',
+    categories: ['Effect'],
+  },
+  {
+    id: 259,
+    name: 'Helicopter',
+    categories: ['Entity'],
+  },
+  {
+    id: 260,
+    name: 'Winston',
+    categories: ['Entity'],
+  },
+  {
+    id: 262,
+    name: 'LaraCutscenePlacement',
+    categories: ['Scenery'],
+  },
+  {
+    id: 263,
+    name: 'ShotgunAnimation',
+    categories: ['Scenery'],
+  },
+  {
+    id: 264,
+    name: 'Dragon (Emitter)',
+    categories: ['Entity'],
+  },
+] as Entity[]
+
 // Entity database for each game version and every entity
 export const EntityDB: { [key in version]?: Entity[] } = {
   [version.TR1]: tr1Data,
+  [version.TR2]: tr2Data,
 }
 
 /**
@@ -976,7 +2158,8 @@ export function isEntityInCategory(entity: entity, category: Category, version: 
 /**
  * Maps entity IDs to fixed/well-known sprite IDs only used for pickups
  */
-export const PickupSpriteLookup: { [key in version]?: Map<number, number> } = {
+
+export const pickupSpriteLookup: { [key in version]?: Map<number, number> } = {
   [version.TR1]: new Map([
     [84, 0],
     [85, 1],
@@ -987,5 +2170,35 @@ export const PickupSpriteLookup: { [key in version]?: Map<number, number> } = {
     [91, 6],
     [93, 7],
     [94, 8],
+    [110, 9],
+    [111, 10],
+    [112, 11],
+    [113, 12],
+  ]),
+
+  // This is not correct for every TR2 level, go figure!
+  // TODO: Make this better
+  [version.TR2]: new Map([
+    [135, 8],
+    [136, 9],
+    [137, 10],
+    [138, 11],
+    [139, 12],
+    [140, 13],
+    [141, 14],
+    // 142 is pistol ammo never used
+    [143, 15],
+    [144, 16],
+    [145, 17],
+    [146, 18],
+    [147, 19],
+    [148, 20],
+    [149, 21],
+    [150, 22],
+    [151, 23],
+    // Secrets
+    [190, 25],
+    [191, 26],
+    [192, 27],
   ]),
 }

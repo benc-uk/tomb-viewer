@@ -17,6 +17,9 @@ Alpine.data('app', () => ({
   fullWidth: true,
   smooth: true,
   aspectRatio: RATIO_16_9,
+  speed: config.speed,
+  fov: config.fov,
+  brightness: config.lightBright,
 
   levelName: '',
   showHelp: true,
@@ -31,7 +34,7 @@ Alpine.data('app', () => ({
     ctx = await Context.init()
     ctx.start()
     ctx.camera.far = config.drawDistance
-    ctx.camera.fov = config.fov
+    ctx.camera.fov = this.fov
     ctx.gamma = config.gamma
     ctx.globalLight.ambient = [config.ambient, config.ambient, config.ambient]
     ctx.globalLight.enabled = false
@@ -48,6 +51,22 @@ Alpine.data('app', () => ({
     this.$watch('width', (value) => {
       this.height = value * this.aspectRatio
       this.resizeCanvas()
+    })
+
+    // Change brightness, requires us to update all lights
+    this.$watch('brightness', (v) => {
+      for (const light of ctx.lights) {
+        const i = light.metadata.intensity as number
+        light.colour = [v * i, v * i, v * i]
+      }
+    })
+
+    this.$watch('fov', (v) => {
+      ctx.camera.fov = v
+    })
+
+    this.$watch('speed', (v) => {
+      ctx.camera.fpMoveSpeed = v
     })
 
     setTimeout(() => {
@@ -98,17 +117,6 @@ Time:  ${Stats.totalTime.toFixed(2)}`
     } catch (e) {
       this.showHelp = false
       this.error = e as string
-    }
-  },
-
-  // Change brightness, requires us to update all lights
-  brightness(e: Event) {
-    config.lightBright = parseFloat((e.target as HTMLInputElement).value)
-    console.log('Light brightness: ' + config.lightBright)
-
-    for (const light of ctx.lights) {
-      const i = light.metadata.intensity as number
-      light.colour = [config.lightBright * i, config.lightBright * i, config.lightBright * i]
     }
   },
 
