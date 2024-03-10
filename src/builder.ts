@@ -49,11 +49,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // Snip the sprite section, from the larger textile image texture
     const buffer = getRegionFromBuffer(tileBuffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
-
-    // HACK: Make the sprite emissive to ignore lighting
-    // - As they are only shaded in GSOTS by directional light which is disabled
     mat.emissive = [1, 1, 1]
     mat.alphaCutoff = 0.5
+
     spriteMaterials.push(mat)
   }
 
@@ -257,31 +255,15 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     // Add room lights
-    // NOTE: These are not added to the roomNode but directly to the world
-    // for (const light of room.lights) {
-    //   const lightPos = [light.x, -light.y, -light.z] as XYZ
-
-    //   let intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
-    //   const fade = light.fade / 0x7fff
-
-    //   intense *= config.lightBright
-    //   if (levelName === 'TR1/01-Caves.PHD') {
-    //     intense *= 2
-    //   }
-    //   // intense *= room.ambientIntensity / 30000
-
-    //   const roomLight = ctx.createPointLight(lightPos, [intense, intense, intense])
-    //   roomLight.constant = config.lightConst * fade
-    //   roomLight.quad = config.lightQuad * fade
-    //   roomLight.linear = 0
-    //   roomLight.metadata.intensity = light.intensity / 0x1fff
-    // }
+    // NOTE: Currently removed!
 
     // Static scenic sprites, these are only really used in TR1 and only in a few levels
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
       const spriteInst = createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx, levelName)
+      const bright = room.ambientIntensity / 11000
+      spriteInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
       roomNode.addChild(spriteInst)
     }
 
@@ -297,8 +279,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
-      const roomAmb = room.ambientIntensity / 15000 // Magic number looks ok in most places
-      meshInst.uniformOverrides = { 'u_mat.emissive': [roomAmb, roomAmb, roomAmb] }
+      const bright = roomStaticMesh.intensity / 0x1fff
+      meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
 
       // We have move the mesh to the room position with the reverse of the room position
       meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
@@ -365,8 +347,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     const meshInst = ctx.createModelInstance(`mesh_${level.meshPointers[model.startingMesh]}`)
-    const roomAmb = level.rooms[entity.room].ambientIntensity / 15000
-    meshInst.uniformOverrides = { 'u_mat.emissive': [roomAmb, roomAmb, roomAmb] }
+    const bright = level.rooms[entity.room].ambientIntensity / 0x1fff
+    meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
 
     // We store the mesh inside a node
     // with the offsets from the first frame of the model's animation

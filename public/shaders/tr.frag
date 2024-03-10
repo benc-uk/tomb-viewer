@@ -7,10 +7,7 @@ precision highp float;
 // ============================================================================
 
 // Inputs from vertex shader
-in vec3 v_normal;
 in vec2 v_texCoord;
-in vec4 v_position;
-in vec4 v_shadowCoord;
 in float v_light;
 
 struct Material {
@@ -30,6 +27,7 @@ struct Material {
 };
 
 uniform Material u_mat;
+uniform float brightness;
 
 // Output colour of this pixel/fragment
 out vec4 outColour;
@@ -42,12 +40,14 @@ void main() {
   }
 
   vec3 diffuseCol = vec3(texel) * u_mat.diffuse;
+  
+  // Main room geometry is shaded using the vertex light value 
   diffuseCol *= v_light;
   
-  float e = u_mat.emissive.r + u_mat.emissive.g + u_mat.emissive.b;
-  if (e > 0.0) {
+  // Other meshes are unshaded using emissive property
+  if (u_mat.emissive.r + u_mat.emissive.g + u_mat.emissive.b > 0.0) {
     diffuseCol = texel.rgb * u_mat.emissive;
   }
 
-  outColour = vec4(diffuseCol.rgb, 1.0);
+  outColour = vec4(diffuseCol.rgb, 1.0) ;
 }

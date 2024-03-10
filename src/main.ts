@@ -21,10 +21,9 @@ Alpine.data('app', () => ({
   aspectRatio: RATIO_16_9,
   speed: config.speed,
   fov: config.fov,
-  brightness: config.lightBright,
+  brightness: 1.0,
 
   levelName: '',
-  // if not localhost, show help
   showHelp: document.location.hostname !== 'localhost',
   stats: '',
   error: '',
@@ -38,9 +37,6 @@ Alpine.data('app', () => ({
     ctx.start()
     ctx.camera.far = config.drawDistance
     ctx.camera.fov = this.fov
-    // ctx.gamma = config.gamma
-    // ctx.globalLight.ambient = [config.ambient, config.ambient, config.ambient]
-    // ctx.globalLight.enabled = false
     ctx.resize()
 
     await ProgramCache.instance.compileShader(CUST_PROG_NAME, 'shaders/tr.vert', 'shaders/tr.frag')

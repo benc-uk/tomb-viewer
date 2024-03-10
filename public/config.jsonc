@@ -1,13 +1,8 @@
 {
   // Camera settings
   "drawDistance": 50000,
-  "fov": 50,
+  "fov": 60,
   "speed": 120,
-
-  // Point lighting settings
-  "lightConst": 6.0,
-  "lightQuad": 0.0000004,
-  "lightBright": 0.8,
 
   // Used to cull rooms that are too far away
   "distanceThreshold": 50000,
