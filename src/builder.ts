@@ -298,7 +298,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
       const roomAmb = room.ambientIntensity / 15000 // Magic number looks ok in most places
-      meshInst.uniformOverrides = { 'u_mat.emissive': [0.5, 0.5, 0.5] }
+      meshInst.uniformOverrides = { 'u_mat.emissive': [roomAmb, roomAmb, roomAmb] }
 
       // We have move the mesh to the room position with the reverse of the room position
       meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
