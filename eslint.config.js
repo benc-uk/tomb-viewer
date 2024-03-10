@@ -11,7 +11,7 @@ export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.r
     'dot-notation': 'error',
     eqeqeq: 'error',
     // 'capitalized-comments': 'error',
-    curly: 'error',
+    // curly: 'error',
     'no-global-assign': 'error',
     'no-implicit-globals': 'error',
     'no-with': 'error',

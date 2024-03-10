@@ -25,9 +25,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   ctx.lights = []
   TextureCache.clear()
 
-  const lightMat = Material.createSolidColour(1, 1, 1)
-  lightMat.emissive = [1, 1, 1]
-
   console.log(`✨ Level data parsing complete, building world...`)
 
   // Create all materials one for each tex-tile
@@ -39,7 +36,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   for (const textile of level.textiles) {
     const buffer = textile8ToBuffer(textile, level.palette)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
-    mat.alphaCutoff = 0.5 // Makes transparent textures work
+    mat.alphaCutoff = 0.7 // Makes transparent textures work
     materials.push(mat)
     tileBuffers.push(buffer)
   }
@@ -87,15 +84,21 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // Add a part to the room, one for each textile
     // This is part of the trick to get the right texture on the right part
     for (let i = 0; i < materials.length; i++) {
-      builder.newPart('roompart_' + i, materials[i])
+      const part = builder.newPart('roompart_' + i, materials[i])
+      part.extraAttributes = { light: { numComponents: 1, data: [] } }
     }
 
     // All room rectangles
     for (const rect of room.roomData.rectangles) {
-      const v1 = trVertToXZY(room.roomData.vertices[rect.vertices[0]].vertex)
-      const v2 = trVertToXZY(room.roomData.vertices[rect.vertices[1]].vertex)
-      const v3 = trVertToXZY(room.roomData.vertices[rect.vertices[2]].vertex)
-      const v4 = trVertToXZY(room.roomData.vertices[rect.vertices[3]].vertex)
+      const rv1 = room.roomData.vertices[rect.vertices[0]]
+      const rv2 = room.roomData.vertices[rect.vertices[1]]
+      const rv3 = room.roomData.vertices[rect.vertices[2]]
+      const rv4 = room.roomData.vertices[rect.vertices[3]]
+
+      const v1 = trVertToXZY(rv1.vertex)
+      const v2 = trVertToXZY(rv2.vertex)
+      const v3 = trVertToXZY(rv3.vertex)
+      const v4 = trVertToXZY(rv4.vertex)
 
       // Texture coordinates are in the bizarrely named objectTextures
       const objTexture = level.objectTextures[rect.texture]
@@ -147,7 +150,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       if (texU4 < uvCenterX) {
         texU4 += uvPadding
       }
-
       if (texV1 > uvCenterY) {
         texV1 -= uvPadding
       }
@@ -173,19 +175,32 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         texV4 += uvPadding
       }
 
-      // This trick gets the rectangle  added to the right part with the matching textile
+      const v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
+      const v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
+      const v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+      const v4light = lightAdjust(1 - rv4.lighting / 0x1fff)
+
+      // This trick gets the rectangle added to the right part with the matching textile
       const part = builder.parts.get('roompart_' + texTileIndex)
       if (part) {
         // Add the rectangle to the builder
         part.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
+
+        // We need to push light data for each vertex
+        // AND we need to have data for both triangles in the rectangle, so 6 vertexes
+        part.extraAttributes?.light?.data.push(v1light, v4light, v3light, v1light, v3light, v2light)
       }
     }
 
     // Now room triangles
     for (const tri of room.roomData.triangles) {
-      const v1 = trVertToXZY(room.roomData.vertices[tri.vertices[0]].vertex)
-      const v2 = trVertToXZY(room.roomData.vertices[tri.vertices[1]].vertex)
-      const v3 = trVertToXZY(room.roomData.vertices[tri.vertices[2]].vertex)
+      const rv1 = room.roomData.vertices[tri.vertices[0]]
+      const rv2 = room.roomData.vertices[tri.vertices[1]]
+      const rv3 = room.roomData.vertices[tri.vertices[2]]
+
+      const v1 = trVertToXZY(rv1.vertex)
+      const v2 = trVertToXZY(rv2.vertex)
+      const v3 = trVertToXZY(rv3.vertex)
 
       // Texture coordinates logic same as rectangles
       const objTexture = level.objectTextures[tri.texture]
@@ -204,9 +219,15 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
       const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
+      const v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
+      const v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
+      const v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+
       const part = builder.parts.get('roompart_' + texTileIndex)
       if (part) {
         part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
+        // We need to push light data for each vertex
+        part.extraAttributes?.light?.data.push(v1light, v3light, v2light)
       }
     }
 
@@ -237,24 +258,24 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
     // Add room lights
     // NOTE: These are not added to the roomNode but directly to the world
-    for (const light of room.lights) {
-      const lightPos = [light.x, -light.y, -light.z] as XYZ
+    // for (const light of room.lights) {
+    //   const lightPos = [light.x, -light.y, -light.z] as XYZ
 
-      let intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
-      const fade = light.fade / 0x7fff
+    //   let intense = light.intensity / 0x1fff // 0x1FFF is the max intensity
+    //   const fade = light.fade / 0x7fff
 
-      intense *= config.lightBright
-      if (levelName === 'TR1/01-Caves.PHD') {
-        intense *= 2
-      }
-      // intense *= room.ambientIntensity / 30000
+    //   intense *= config.lightBright
+    //   if (levelName === 'TR1/01-Caves.PHD') {
+    //     intense *= 2
+    //   }
+    //   // intense *= room.ambientIntensity / 30000
 
-      const roomLight = ctx.createPointLight(lightPos, [intense, intense, intense])
-      roomLight.constant = config.lightConst * fade
-      roomLight.quad = config.lightQuad * fade
-      roomLight.linear = 0
-      roomLight.metadata.intensity = light.intensity / 0x1fff
-    }
+    //   const roomLight = ctx.createPointLight(lightPos, [intense, intense, intense])
+    //   roomLight.constant = config.lightConst * fade
+    //   roomLight.quad = config.lightQuad * fade
+    //   roomLight.linear = 0
+    //   roomLight.metadata.intensity = light.intensity / 0x1fff
+    // }
 
     // Static scenic sprites, these are only really used in TR1 and only in a few levels
     for (const roomSprite of room.roomData.sprites) {
@@ -276,6 +297,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
+      const roomAmb = room.ambientIntensity / 15000 // Magic number looks ok in most places
+      meshInst.uniformOverrides = { 'u_mat.emissive': [0.5, 0.5, 0.5] }
 
       // We have move the mesh to the room position with the reverse of the room position
       meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
@@ -312,7 +335,24 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     // Filter out things that are enemies or Lara, and other stuff
-    if (isEntityInCategory(entity, 'Entity', level.version)) {
+    if (isEntityInCategory(entity, 'Entity', level.version) || isEntityInCategory(entity, 'Effect', level.version)) {
+      continue
+    }
+
+    // HACK: Special case for the lava and fire particle systems
+    if (entity.type === 177 || entity.type === 179 || entity.type === 253 || entity.type === 251) {
+      const particleTex = TextureCache.instance.getCreate('effects/particle.png')
+      const { particleSystem: lavaPS, instance: lavaInst } = ctx.createParticleSystem(50, 500)
+      lavaInst.position = entityPos
+      lavaPS.texture = particleTex!
+      lavaPS.emitRate = 20
+      lavaPS.minPower = 200
+      lavaPS.maxPower = 600
+      lavaPS.minLifetime = 1.3
+      lavaPS.maxLifetime = entity.type === 177 || entity.type === 179 ? 7.0 : 3.0
+      lavaPS.gravity = [0, 0, 0]
+      lavaPS.ageColour = [0.0, 2.0, 3.0, 1.0]
+      roomNodes.get(entity.room)?.addChild(lavaInst)
       continue
     }
 
@@ -325,6 +365,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     const meshInst = ctx.createModelInstance(`mesh_${level.meshPointers[model.startingMesh]}`)
+    const roomAmb = level.rooms[entity.room].ambientIntensity / 15000
+    meshInst.uniformOverrides = { 'u_mat.emissive': [roomAmb, roomAmb, roomAmb] }
 
     // We store the mesh inside a node
     // with the offsets from the first frame of the model's animation
@@ -336,7 +378,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     entityNode.addChild(meshInst)
     // Important! Rotate the *node* to the correct angle, not the model
     entityNode.rotateY(entityAngleToDeg(entity.angle) * (Math.PI / 180))
-
     roomNodes.get(entity.room)?.addChild(entityNode)
   }
 
@@ -378,7 +419,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   })
 
   ctx.update = () => {
-    if (Stats.frameCount % 20 === 0) {
+    if (Stats.frameCount % 10 === 0) {
       // Find the rooms closest to the camera
       const camPos = ctx.camera.getFrustumCenter(0.3)
 
@@ -400,6 +441,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       }
     }
   }
+}
+
+/**
+ * Adjust vertex light values to look better and increase contrast
+ */
+function lightAdjust(val: number) {
+  val *= 1.8
+  val = Math.pow(val, 1.2)
+  val = Math.min(1, Math.max(0, val))
+  return val
 }
 
 /**

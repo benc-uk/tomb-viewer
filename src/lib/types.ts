@@ -372,6 +372,13 @@ export function ParseRoomVertex(data: DataView, offset: number): room_vertex {
   } as room_vertex
 }
 
+export function ParseRoomVertexTR2(data: DataView, offset: number): room_vertex {
+  return {
+    vertex: ParseVertex(data, offset),
+    lighting: data.getInt16(offset + 10, true),
+  } as room_vertex
+}
+
 export type room_sprite = {
   vertex: int16_t
   texture: int16_t

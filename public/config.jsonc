@@ -1,18 +1,14 @@
 {
-  // Gamma settings
-  "gamma": 0.9,
-  "ambient": 0.15,
-
   // Camera settings
-  "drawDistance": 40000,
+  "drawDistance": 50000,
   "fov": 50,
   "speed": 120,
 
-  // Lighting settings
+  // Point lighting settings
   "lightConst": 6.0,
   "lightQuad": 0.0000004,
   "lightBright": 0.8,
 
   // Used to cull rooms that are too far away
-  "distanceThreshold": 30000,
+  "distanceThreshold": 50000,
 }

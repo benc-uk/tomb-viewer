@@ -1,6 +1,6 @@
 # 🗿 Tomb Viewer 🪙
 
-This is WebGL based viewer / renderer for exploring and showing classic Tomb Raider levels in your browser, with no plugins or WASM nonsense.
+This is WebGL based viewer / renderer for exploring and showing classic (Core Design games 1-5) Tomb Raider levels in your browser, with no plugins or WASM nonsense.
 
 It is written entirely in TypeScript with Vite.js and uses my own [GSOTS3D](https://github.com/benc-uk/gsots3d) library for all 3D rendering, it is a standalone static webapp and yeah... It works pretty damn well 🥰
 

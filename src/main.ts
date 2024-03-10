@@ -4,12 +4,14 @@ import Alpine from 'alpinejs'
 import { loadConfig, AppConfig } from './config.js'
 import { Context, Stats } from 'gsots3d'
 import { buildWorld } from './builder.js'
+import { ProgramCache } from 'gsots3d'
 
 let ctx: Context
 let config = {} as AppConfig
 
 const RATIO_16_9 = 0.5625
 const RATIO_4_3 = 0.75
+const CUST_PROG_NAME = 'trShader'
 
 Alpine.data('app', () => ({
   width: 0,
@@ -22,7 +24,8 @@ Alpine.data('app', () => ({
   brightness: config.lightBright,
 
   levelName: '',
-  showHelp: true,
+  // if not localhost, show help
+  showHelp: document.location.hostname !== 'localhost',
   stats: '',
   error: '',
 
@@ -35,10 +38,13 @@ Alpine.data('app', () => ({
     ctx.start()
     ctx.camera.far = config.drawDistance
     ctx.camera.fov = this.fov
-    ctx.gamma = config.gamma
-    ctx.globalLight.ambient = [config.ambient, config.ambient, config.ambient]
-    ctx.globalLight.enabled = false
+    // ctx.gamma = config.gamma
+    // ctx.globalLight.ambient = [config.ambient, config.ambient, config.ambient]
+    // ctx.globalLight.enabled = false
     ctx.resize()
+
+    await ProgramCache.instance.compileShader(CUST_PROG_NAME, 'shaders/tr.vert', 'shaders/tr.frag')
+    ProgramCache.instance.setDefaultProgram(CUST_PROG_NAME)
 
     config.textureFilter = false
     this.loadLevel(window.location.hash ? window.location.hash.slice(1) : 'TR1/01-Caves.PHD')
