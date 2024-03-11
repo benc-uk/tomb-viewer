@@ -523,8 +523,7 @@ export type entity = {
   y: int32_t
   z: int32_t
   angle: int16_t
-  intensity1: int16_t
-  intensity2: int16_t
+  intensity: int16_t
   flags: uint16_t
 }
 
@@ -539,7 +538,7 @@ export function ParseEntity(data: DataView, offset: number): entity {
     y: data.getInt32(offset + 8, true),
     z: data.getInt32(offset + 12, true),
     angle: data.getInt16(offset + 16, true),
-    intensity1: data.getInt16(offset + 18, true),
+    intensity: data.getInt16(offset + 18, true),
     flags: data.getInt16(offset + 20, true),
   } as entity
 }
@@ -552,8 +551,7 @@ export function ParseEntityTR2(data: DataView, offset: number): entity {
     y: data.getInt32(offset + 8, true),
     z: data.getInt32(offset + 12, true),
     angle: data.getInt16(offset + 16, true),
-    intensity1: data.getInt16(offset + 18, true),
-    intensity2: data.getInt16(offset + 20, true),
+    intensity: data.getInt16(offset + 18, true),
     flags: data.getInt16(offset + 22, true),
   } as entity
 }

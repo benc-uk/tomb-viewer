@@ -29,7 +29,7 @@ void main() {
 
   // Create fake water caustics effect, modulate with time the vertex light
   if(u_water > 0.0) {
-    float wave = sin((position.x + position.z * 0.6) * 8.8 + u_time * 1.3);
+    float wave = sin((position.x + position.z * 0.6) * 8.8 + u_time * 2.0);
     v_light = v_light * (0.8 + wave) + 0.2;
   }
 

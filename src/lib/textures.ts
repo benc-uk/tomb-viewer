@@ -86,23 +86,20 @@ export function getRegionFromBuffer(srcBuffer: Uint8Array, offsetX: number, offs
   return imgData
 }
 
-export function bufferToImageData(buffer: ArrayBuffer, width: number, height: number) {
-  const imgData = new ImageData(new Uint8ClampedArray(buffer), width, height)
-  return imgData
-}
-
+// Used for debugging only
 export function bufferToCanvas(buffer: ArrayBuffer, width: number, height: number) {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
 
   const ctx = canvas.getContext('2d')!
-  const imgData = bufferToImageData(buffer, width, height)
+  const imgData = new ImageData(new Uint8ClampedArray(buffer), width, height)
   ctx.putImageData(imgData, 0, 0)
 
   return canvas
 }
 
+// Used for debugging only
 export function debugTextiles(level: level) {
   document.body.style.overflow = 'auto'
 
@@ -120,4 +117,17 @@ export function debugTextiles(level: level) {
       document.body.prepend(can)
     }
   }
+}
+
+// Used for debugging only
+export function stringToImageBuffer(str: string) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  canvas.width = 256
+  canvas.height = 128
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = 'orange'
+  ctx.font = '140px monospace'
+  ctx.fillText(str, 10, 100)
+  return ctx.getImageData(0, 0, 256, 128).data
 }

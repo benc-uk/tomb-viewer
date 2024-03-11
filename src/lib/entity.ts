@@ -19,6 +19,7 @@ export type Category =
   | 'Key'
   | 'Keyhole'
   | 'Effect'
+  | 'Particles'
 
 type Entity = {
   id: number
@@ -820,7 +821,7 @@ const tr1Data = [
   {
     id: 177,
     name: 'Lava Emitter',
-    categories: ['Trap'],
+    categories: ['Trap', 'Particles'],
   },
   {
     id: 178,
@@ -830,7 +831,7 @@ const tr1Data = [
   {
     id: 179,
     name: 'Flame Emitter',
-    categories: ['Trap'],
+    categories: ['Trap', 'Particles'],
   },
   {
     id: 180,
@@ -2077,7 +2078,7 @@ const tr2Data = [
   {
     id: 251,
     name: 'Lava Emitter',
-    categories: ['Trap'],
+    categories: ['Trap', 'Particles'],
   },
   {
     id: 252,
@@ -2086,7 +2087,7 @@ const tr2Data = [
   {
     id: 253,
     name: 'Flame Emitter',
-    categories: ['Fire'],
+    categories: ['Fire', 'Particles'],
   },
   {
     id: 254,
@@ -2153,52 +2154,4 @@ export const EntityDB: { [key in version]?: Entity[] } = {
 export function isEntityInCategory(entity: entity, category: Category, version: version): boolean {
   const dbEntity = EntityDB[version]?.find((e) => e.id === entity.type)
   return dbEntity?.categories?.includes(category) ?? false
-}
-
-/**
- * Maps entity IDs to fixed/well-known sprite IDs only used for pickups
- */
-
-export const pickupSpriteLookup: { [key in version]?: Map<number, number> } = {
-  [version.TR1]: new Map([
-    [84, 0],
-    [85, 1],
-    [86, 2],
-    [87, 3],
-    [89, 4],
-    [90, 5],
-    [91, 6],
-    [93, 7],
-    [94, 8],
-    [110, 9],
-    [111, 10],
-    [112, 11],
-    [113, 12],
-  ]),
-
-  // This is not correct for every TR2 level, go figure!
-  // TODO: Make this better
-  [version.TR2]: new Map([
-    [135, 8],
-    [136, 9],
-    [137, 10],
-    [138, 11],
-    [139, 12],
-    [140, 13],
-    [141, 14],
-    // 142 is pistol ammo never used
-    [143, 15],
-    [144, 16],
-    [145, 17],
-    [146, 18],
-    [147, 19],
-    [148, 20],
-    [149, 21],
-    [150, 22],
-    [151, 23],
-    // Secrets
-    [190, 25],
-    [191, 26],
-    [192, 27],
-  ]),
 }

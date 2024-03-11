@@ -9,7 +9,8 @@ import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { AppConfig } from './config'
-import { isEntityInCategory, pickupSpriteLookup } from './lib/entity'
+import { isEntityInCategory } from './lib/entity'
+import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
 
 export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -19,6 +20,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
   // Kinda important! Parse the level data into a TR level data structure
   const level = parseLevel(data)
+  level.levelName = levelName
 
   // Clear the world, lights and texture cache for when we load a new level
   ctx.removeAllInstances()
@@ -270,9 +272,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
-      const spriteInst = createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx, levelName)
+      const spriteInst = createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx)
       const bright = room.ambientIntensity / 11000
       spriteInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
+      fixVines(spriteInst, levelName, roomSprite.texture)
       roomNode.addChild(spriteInst)
     }
 
@@ -288,7 +291,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
-      const bright = roomStaticMesh.intensity / 0x1fff
+      const bright = 1 - roomStaticMesh.intensity / 0x1fff
       meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
 
       // We have move the mesh to the room position with the reverse of the room position
@@ -325,30 +328,17 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       continue
     }
 
-    // Filter out things that are enemies or Lara, and other stuff
+    // Filter out things that are enemies or Lara, and other stuff, TOO HARD!
     if (isEntityInCategory(entity, 'Entity', level.version) || isEntityInCategory(entity, 'Effect', level.version)) {
       continue
     }
 
-    // HACK: Special case for the lava and fire particle systems
-    if (entity.type === 177 || entity.type === 179 || entity.type === 253 || entity.type === 251) {
-      const particleTex = TextureCache.instance.getCreate('effects/particle.png')
-      const { particleSystem: lavaPS, instance: lavaInst } = ctx.createParticleSystem(50, 500)
-      lavaInst.position = entityPos
-      lavaPS.texture = particleTex!
-      lavaPS.emitRate = 20
-      lavaPS.minPower = 200
-      lavaPS.maxPower = 600
-      lavaPS.minLifetime = 1.3
-      lavaPS.maxLifetime = entity.type === 177 || entity.type === 179 ? 7.0 : 3.0
-      lavaPS.gravity = [0, 0, 0]
-      lavaPS.ageColour = [0.0, 2.0, 3.0, 1.0]
-      roomNodes.get(entity.room)?.addChild(lavaInst)
+    // Check for special effects for entities like flames & particles
+    if (entityEffects(entity, level, entityPos, roomNodes, ctx)) {
       continue
     }
 
-    // Other entities are OK, so we find the model
-
+    // All other entities are OK, so we find the model
     // Models are matched 1:1 with entities, so use entity type as the model ID
     const model = level.models.get(entity.type)
     if (!model) {
@@ -356,7 +346,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     const meshInst = ctx.createModelInstance(`mesh_${level.meshPointers[model.startingMesh]}`)
-    const bright = level.rooms[entity.room].ambientIntensity / 0x1fff
+    // Intensity1: If not -1, it is a value of constant lighting. -1 means “use mesh lighting”.
+    let bright = 1 - entity.intensity / 0x1fff
+    if (entity.intensity === -1) {
+      // Lazy but looks fine in 95% of cases
+      bright = 0.5
+    }
     meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
 
     // We store the mesh inside a node
@@ -372,7 +367,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     roomNodes.get(entity.room)?.addChild(entityNode)
   }
 
-  console.log('🌍 World built OK, level fully loaded into 3D')
+  console.log('🌍 World built OK, level geometry complete')
   console.log(`🌐 Rooms: ${level.numRooms}, Entities ${level.numEntities}, Meshes: ${level.numMeshPointers}, Models: ${level.numModels}`)
 
   // Find the entity with ID type 0 this is Lara and the start point
@@ -410,17 +405,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   })
 
   ctx.update = () => {
-    if (Stats.frameCount % 5 === 0) {
+    if (Stats.frameCount % 4 === 0) {
       // Find the rooms closest to the camera
       const camPos = ctx.camera.getFrustumCenter(0.3)
 
       for (const [_, roomNode] of roomNodes) {
         // Update time for water rooms, to create caustics effect
         if (roomNode.metadata.water) {
-          for (const child of roomNode.children as Instance[]) {
-            if (child.uniformOverrides) {
-              child.uniformOverrides.u_time = Stats.totalTime
-            }
+          const room = roomNode.children[0] as Instance
+          if (room.uniformOverrides && room.uniformOverrides?.u_time) {
+            room.uniformOverrides.u_time = Stats.totalTime
           }
         }
 
@@ -456,14 +450,7 @@ function lightAdjust(val: number) {
 /**
  * Internal function for creating a sprite instance
  */
-function createSpriteInst(
-  vert: XYZ,
-  spriteId: number,
-  spriteTextures: sprite_texture[],
-  spriteMaterials: Material[],
-  ctx: Context,
-  levelName?: string
-): Instance {
+function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: sprite_texture[], spriteMaterials: Material[], ctx: Context): Instance {
   const spriteTex = spriteTextures[spriteId]
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
@@ -477,17 +464,6 @@ function createSpriteInst(
   const spriteInst = ctx.createBillboardInstance(spriteMaterials[spriteId], size)
   spriteInst.scale = [1, aspect, 1]
   spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
-
-  // Fix vines in the first few TR1 levels
-  if (levelName === 'TR1/01-Caves.PHD' && (spriteId === 147 || spriteId === 148)) {
-    spriteInst.position[1] -= 2200
-  }
-  if (levelName === 'TR1/02-City-of-Vilcabamba.PHD' && (spriteId === 155 || spriteId === 156)) {
-    spriteInst.position[1] -= 2200
-  }
-  if (levelName === 'TR1/03-The-Lost-Valley.PHD' && (spriteId === 143 || spriteId === 144)) {
-    spriteInst.position[1] -= 2200
-  }
 
   return spriteInst
 }
