@@ -83,7 +83,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // This is part of the trick to get the right texture on the right part
     for (let i = 0; i < materials.length; i++) {
       const part = builder.newPart('roompart_' + i, materials[i])
-      part.extraAttributes = { light: { numComponents: 1, data: [] } }
+      part.extraAttributes = {
+        light: { numComponents: 1, data: [] },
+        off: { numComponents: 1, data: [] },
+      }
     }
 
     // All room rectangles
@@ -226,6 +229,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
         // We need to push light data for each vertex
         part.extraAttributes?.light?.data.push(v1light, v3light, v2light)
+        part.extraAttributes?.off?.data.push(1, 3, 2)
       }
     }
 
@@ -244,11 +248,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       roomNode.metadata.centerZ = center[2] - room.info.z
 
       // Water rooms are blue/green, use uniformOverrides to do this
+      roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: 0 }
       if (isWaterRoom(room)) {
-        roomInstance.uniformOverrides = { 'u_mat.diffuse': [0, 0.9, 0.8] }
+        roomInstance.uniformOverrides = { 'u_mat.diffuse': [0, 0.9, 0.8], u_time: Stats.totalTime, u_water: 1 }
       }
 
       roomNode.addChild(roomInstance)
+
+      if (isWaterRoom(room)) {
+        roomNode.metadata.water = true
+      }
     } catch (e) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
@@ -401,24 +410,33 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   })
 
   ctx.update = () => {
-    if (Stats.frameCount % 10 === 0) {
+    if (Stats.frameCount % 5 === 0) {
       // Find the rooms closest to the camera
       const camPos = ctx.camera.getFrustumCenter(0.3)
 
-      for (const [_, node] of roomNodes) {
+      for (const [_, roomNode] of roomNodes) {
+        // Update time for water rooms, to create caustics effect
+        if (roomNode.metadata.water) {
+          for (const child of roomNode.children as Instance[]) {
+            if (child.uniformOverrides) {
+              child.uniformOverrides.u_time = Stats.totalTime
+            }
+          }
+        }
+
         // Hide flipped rooms, needed for alternate rooms
-        if (node.metadata.flipped) {
-          node.enabled = false
+        if (roomNode.metadata.flipped) {
+          roomNode.enabled = false
           continue
         }
 
-        const roomCenter = [node.metadata.centerX, node.metadata.centerY, node.metadata.centerZ] as XYZ
+        const roomCenter = [roomNode.metadata.centerX, roomNode.metadata.centerY, roomNode.metadata.centerZ] as XYZ
 
         const dist = Math.abs(camPos[0] - roomCenter[0]) + Math.abs(camPos[1] - roomCenter[1]) + Math.abs(camPos[2] - roomCenter[2])
         if (dist < config.distanceThreshold) {
-          node.enabled = true
+          roomNode.enabled = true
         } else {
-          node.enabled = false
+          roomNode.enabled = false
         }
       }
     }
