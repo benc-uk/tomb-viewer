@@ -11,7 +11,8 @@ let config = {} as AppConfig
 
 const RATIO_16_9 = 0.5625
 const RATIO_4_3 = 0.75
-const CUST_PROG_NAME = 'trShader'
+export const CUST_PROG_ROOM = 'trShaderRoom'
+export const CUST_PROG_MESH = 'trShaderMesh'
 
 Alpine.data('app', () => ({
   width: 0,
@@ -39,8 +40,9 @@ Alpine.data('app', () => ({
     ctx.camera.fov = this.fov
     ctx.resize()
 
-    await ProgramCache.instance.compileShader(CUST_PROG_NAME, 'shaders/tr.vert', 'shaders/tr.frag')
-    ProgramCache.instance.setDefaultProgram(CUST_PROG_NAME)
+    await ProgramCache.instance.compileShader(CUST_PROG_ROOM, 'shaders/room.vert', 'shaders/room.frag')
+    await ProgramCache.instance.compileShader(CUST_PROG_MESH, 'shaders/mesh.vert', 'shaders/mesh.frag')
+    ProgramCache.instance.setDefaultProgram(CUST_PROG_ROOM)
 
     config.textureFilter = false
     this.loadLevel(window.location.hash ? window.location.hash.slice(1) : 'TR1/01-Caves.PHD')

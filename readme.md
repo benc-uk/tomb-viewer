@@ -11,15 +11,18 @@ Status:
 - Texture data loaded from level file
 - Level geometry rendered with textures and normals
 - Transparency and sprites
+- Dynamic effects for water, particles and flames
 - Meshes for static scenery and single mesh entities (doors, traps etc)
 
 [![Build](https://github.com/benc-uk/tomb-viewer/actions/workflows/static-build.yml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml) [![CI](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml)
 
 ![](./screens/sphinx.png)
 ![](./screens/midas.png)
-![](./screens/valley.png)
-![](./screens/khamoon.png)
+![](./screens/hideout.png)
+![](./screens/monestry.png)
 ![](./screens/cistern.png)
+
+See [screens directory for more](./screens/)
 
 Todo:
 
@@ -41,7 +44,7 @@ Controls:
 - Space bar to switch alt rooms
 - 'H' to show the help
 
-There are some options available by clicking the cog icon in the top right. More to be added later, the rest are in the config.jsonc file in the public folder
+There are some options available by clicking the cog icon in the top right.
 
 # 🤓 Running locally
 

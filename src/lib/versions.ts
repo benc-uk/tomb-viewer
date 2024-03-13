@@ -50,6 +50,11 @@ export function entityEffects(entity: entity, level: level, entityPos: [number, 
     if (level.levelName.includes('Diving-Area')) {
       particles.ageColour = [2.0, 0.0, 3.0, 1.0]
     }
+
+    // Hack for water bubbles in one level the TR2 Barkhang-Monastery
+    if (level.levelName.includes('Barkhang')) {
+      particles.ageColour = [2.0, 1.0, 0.0, 1.0]
+    }
   }
 
   roomNodes.get(entity.room)?.addChild(inst)

@@ -11,6 +11,13 @@ import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixe
 import { AppConfig } from './config'
 import { isEntityInCategory } from './lib/entity'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
+import { CUST_PROG_MESH } from './main'
+
+type SimpleLight = {
+  pos: XYZ
+  intensity: number
+  maxDist: number
+}
 
 export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
   ctx.removeAllInstances()
@@ -33,12 +40,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   const materials = new Array<Material>()
   const spriteMaterials = new Array<Material>()
   const tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
+  const roomLights = new Map<number, Array<SimpleLight>>()
 
   // Gather all the textiles (texture tiles) into materials and usable texture maps
   for (const textile of level.textiles) {
     const buffer = textile8ToBuffer(textile, level.palette)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
-    mat.alphaCutoff = 0.7 // Makes transparent textures work
     materials.push(mat)
     tileBuffers.push(buffer)
   }
@@ -69,10 +76,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   // Core loop - build all room geometry
   for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
     const room = level.rooms[roomNum]
+    const roomX = room.info.x
+    const roomZ = room.info.z
 
     const roomNode = new Node()
     roomNodes.set(roomNum, roomNode)
-    roomNode.position = [room.info.x, 0, -room.info.z]
+    roomNode.position = [roomX, 0, -roomZ]
 
     // Find the alternate room pairs
     if (room.alternateRoom !== -1) {
@@ -87,7 +96,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const part = builder.newPart('roompart_' + i, materials[i])
       part.extraAttributes = {
         light: { numComponents: 1, data: [] },
-        off: { numComponents: 1, data: [] },
       }
     }
 
@@ -250,9 +258,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       roomNode.metadata.centerZ = center[2] - room.info.z
 
       // Water rooms are blue/green, use uniformOverrides to do this
-      roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: 0 }
+      roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: false }
       if (isWaterRoom(room)) {
-        roomInstance.uniformOverrides = { 'u_mat.diffuse': [0, 0.9, 0.8], u_time: Stats.totalTime, u_water: 1 }
+        roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: true }
       }
 
       roomNode.addChild(roomInstance)
@@ -260,13 +268,26 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       if (isWaterRoom(room)) {
         roomNode.metadata.water = true
       }
+
+      // Add room lights
+      const roomLightArray = []
+      for (const light of room.lights) {
+        // Add to the room light data array
+        roomLightArray.push({
+          pos: [light.x, -light.y, -light.z],
+          intensity: light.intensity / 0x1fff,
+          maxDist: light.fade,
+        } as SimpleLight)
+
+        roomLights.set(roomNum, roomLightArray)
+      }
+
+      // Add room light data to the room model
+      roomInstance.uniformOverrides = { ...roomInstance.uniformOverrides, u_lights: roomLightArray, u_numLights: room.numLights }
     } catch (e) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
     }
-
-    // Add room lights
-    // NOTE: Currently removed!
 
     // Static scenic sprites, these are only really used in TR1 and only in a few levels
     for (const roomSprite of room.roomData.sprites) {
@@ -292,7 +313,13 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
       const bright = 1 - roomStaticMesh.intensity / 0x1fff
-      meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
+
+      meshInst.customProgramName = CUST_PROG_MESH
+      meshInst.uniformOverrides = {
+        'u_mat.ambient': [bright, bright, bright],
+        u_lights: roomLights.get(roomNum) ?? [],
+        u_numLights: roomLights.get(roomNum)?.length ?? 0,
+      }
 
       // We have move the mesh to the room position with the reverse of the room position
       meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
@@ -349,10 +376,15 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // Intensity1: If not -1, it is a value of constant lighting. -1 means “use mesh lighting”.
     let bright = 1 - entity.intensity / 0x1fff
     if (entity.intensity === -1) {
-      // Lazy but looks fine in 95% of cases
-      bright = 0.5
+      // This is a bit of a hack, but it works
+      bright = level.rooms[entity.room].ambientIntensity / 11000
     }
-    meshInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
+    meshInst.customProgramName = CUST_PROG_MESH
+    meshInst.uniformOverrides = {
+      'u_mat.ambient': [bright, bright, bright],
+      u_lights: roomLights.get(entity.room) ?? [],
+      u_numLights: roomLights.get(entity.room)?.length ?? 0,
+    }
 
     // We store the mesh inside a node
     // with the offsets from the first frame of the model's animation
@@ -498,7 +530,8 @@ function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, mater
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
     if (!parts.get(texTileIndex)) {
-      parts.set(texTileIndex, builder.newPart('part_' + texTileIndex, materials[texTileIndex]))
+      const part = builder.newPart('part_' + texTileIndex, materials[texTileIndex])
+      parts.set(texTileIndex, part)
     }
   }
 
