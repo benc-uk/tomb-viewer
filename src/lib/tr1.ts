@@ -246,9 +246,32 @@ export function parseLevel(data: DataView): tr.level {
   // Ignore zones etc
   offset += 12 * numBoxes // Skipped zone data
 
-  const numAnimatedTextures = data.getUint32(offset, true)
+  // This is misleadingly named in the TRosettaStone
+  // It's actually the number of 2 byte words NOT number of animated textures
+  // SKIP const animTextureNumWords = data.getUint32(offset, true)
   offset += 4
-  offset += numAnimatedTextures * 2 // Skipped data
+
+  // This is the real number of animated textures!
+  level.numAnimatedTextures = data.getUint16(offset, true)
+  offset += 2
+
+  level.animatedTextures = new Array<tr.animated_texture>()
+  for (let i = 0; i < level.numAnimatedTextures; i++) {
+    // IMPORTANT! ADD ONE HERE! Also it's _always_ four so why bother?
+    const textCount = data.getUint16(offset, true) + 1
+    offset += 2
+
+    const ids = new Array<number>()
+    for (let j = 0; j < textCount; j++) {
+      ids.push(data.getUint16(offset + j * 2, true))
+      offset += 2
+    }
+
+    level.animatedTextures.push({
+      size: textCount,
+      objTexIds: ids,
+    } as tr.animated_texture)
+  }
 
   level.numEntities = data.getUint32(offset, true)
   offset += 4

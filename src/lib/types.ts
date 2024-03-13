@@ -157,6 +157,9 @@ export type level = {
   numAnimations: uint32_t
   animations: animation[]
 
+  numAnimatedTextures: uint16_t
+  animatedTextures: animated_texture[]
+
   palette: colour[]
   palette16: colour4[] // Note this is NOT used to lookup textiles16 colours!
 }
@@ -735,4 +738,9 @@ export function ParseAnimFrame(data: DataView, offset: number): anim_frame {
     angleSets: angleSets,
     bytes: bounding_box_size + 8 + numValues * 2,
   } as anim_frame
+}
+
+export type animated_texture = {
+  size: uint16_t // always 3 which actually means 4!
+  objTexIds: uint16_t[]
 }

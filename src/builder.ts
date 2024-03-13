@@ -6,7 +6,7 @@
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
+import { debugTextiles, getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { AppConfig } from './config'
 import { isEntityInCategory } from './lib/entity'
@@ -40,7 +40,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   const materials = new Array<Material>()
   const spriteMaterials = new Array<Material>()
   const tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
-  const roomLights = new Map<number, Array<SimpleLight>>()
+  // For our own light system, we need to keep track of the lights in each room
+  const roomLights = new Map<number, SimpleLight[]>()
 
   // Gather all the textiles (texture tiles) into materials and usable texture maps
   for (const textile of level.textiles) {
@@ -269,7 +270,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         roomNode.metadata.water = true
       }
 
-      // Add room lights
+      // Add room lights, we bypass the GSOTS light system and use our own!
       const roomLightArray = []
       for (const light of room.lights) {
         // Add to the room light data array
@@ -315,6 +316,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const bright = 1 - roomStaticMesh.intensity / 0x1fff
 
       meshInst.customProgramName = CUST_PROG_MESH
+      // For meshes, we override the lighting and add the room lights
       meshInst.uniformOverrides = {
         'u_mat.ambient': [bright, bright, bright],
         u_lights: roomLights.get(roomNum) ?? [],
@@ -356,7 +358,11 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     // Filter out things that are enemies or Lara, and other stuff, TOO HARD!
-    if (isEntityInCategory(entity, 'Entity', level.version) || isEntityInCategory(entity, 'Effect', level.version)) {
+    if (
+      isEntityInCategory(entity, 'Entity', level.version) ||
+      isEntityInCategory(entity, 'Effect', level.version) ||
+      isEntityInCategory(entity, 'Lara', level.version)
+    ) {
       continue
     }
 
@@ -436,6 +442,16 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
   })
 
+  // List all animated textures
+  // console.log('🎨 COUNT Animated textures:', level.numAnimatedTextures)
+  // for (const animTex of level.animatedTextures) {
+  //   //console.log('🎨 VALUE Animated texture:', animTex)
+  //   console.log('🎨 object texture:', level.objectTextures[animTex])
+  //   const objText = level.objectTextures[animTex]
+  //   const textileNum = objText.tileAndFlag & 0x3fff
+  //   console.log('🎨 textileNum:', textileNum)
+  // }
+
   ctx.update = () => {
     if (Stats.frameCount % 4 === 0) {
       // Find the rooms closest to the camera
@@ -444,6 +460,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       for (const [_, roomNode] of roomNodes) {
         // Update time for water rooms, to create caustics effect
         if (roomNode.metadata.water) {
+          // Hardcoded that roomNodes first child is the room model
           const room = roomNode.children[0] as Instance
           if (room.uniformOverrides && room.uniformOverrides?.u_time) {
             room.uniformOverrides.u_time = Stats.totalTime

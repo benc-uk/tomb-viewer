@@ -36,7 +36,7 @@ export function parseLevel(dataArray: Uint8Array): tr.level {
 }
 
 /**
- * Parses a mesh from the level file
+ * Parses a mesh from the level file, this is shared between TR1 and TR2
  * @param data DataView of the level file
  * @param offset Offset into the mesh data block
  */
