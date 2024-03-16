@@ -6,7 +6,7 @@
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
 import { getLevelFile } from './lib/file'
 import { parseLevel } from './lib/parser'
-import { debugTextiles, getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
+import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
 import { AppConfig } from './config'
 import { isEntityInCategory } from './lib/entity'
@@ -17,6 +17,12 @@ type SimpleLight = {
   pos: XYZ
   intensity: number
   maxDist: number
+}
+
+type AnimatedTexture = {
+  material: Material
+  objTexIds: number[]
+  textures: WebGLTexture[]
 }
 
 export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
@@ -42,6 +48,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   const tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
   // For our own light system, we need to keep track of the lights in each room
   const roomLights = new Map<number, SimpleLight[]>()
+  // Animated textures require special handling
+  const animTextures = new Array<AnimatedTexture>()
 
   // Gather all the textiles (texture tiles) into materials and usable texture maps
   for (const textile of level.textiles) {
@@ -59,10 +67,38 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     // Snip the sprite section, from the larger textile image texture
     const buffer = getRegionFromBuffer(tileBuffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
     const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
-    mat.emissive = [1, 1, 1]
-    mat.alphaCutoff = 0.5
+    mat.alphaCutoff = 0.7
 
     spriteMaterials.push(mat)
+  }
+
+  // Create all animated texture materials
+  console.log(`💃 Creating ${level.animatedTextures.length} animated textures...`)
+  for (const animTex of level.animatedTextures) {
+    const textures = new Array<WebGLTexture>()
+    for (const objTexId of animTex.objTexIds) {
+      const ot = level.objectTextures[objTexId]
+      const texTileIndex = ot.tileAndFlag & 0x3fff
+
+      const u1 = ufixed16ToFloat(ot.vertices[0].x)
+      const v1 = ufixed16ToFloat(ot.vertices[0].y)
+      const u2 = ufixed16ToFloat(ot.vertices[1].x)
+      const v3 = ufixed16ToFloat(ot.vertices[2].y)
+
+      // Snip the section, from the larger textile image texture
+      const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], Math.round(u1), Math.round(v1), Math.round(u2 - u1), Math.round(v3 - v1), 256)
+      const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
+      textures.push(tex!)
+    }
+
+    const m = new Material()
+    m.diffuseTex = textures[0]
+
+    animTextures.push({
+      material: m,
+      textures,
+      objTexIds: animTex.objTexIds,
+    })
   }
 
   // Create all GSOTS models for meshes
@@ -193,7 +229,33 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const v4light = lightAdjust(1 - rv4.lighting / 0x1fff)
 
       // This trick gets the rectangle added to the right part with the matching textile
-      const part = builder.parts.get('roompart_' + texTileIndex)
+      let part = builder.parts.get('roompart_' + texTileIndex)
+
+      // Special check for animated textures
+      // Search all animTextures and the objectTextureIds for a match
+      for (const animTex of animTextures) {
+        if (animTex.objTexIds.includes(rect.texture)) {
+          if (!builder.parts.has('roompart_anim_' + rect.texture)) {
+            const part = builder.newPart('roompart_anim_' + rect.texture, animTex.material)
+            animTex.material.opacity = isWaterRoom(room) ? 0.5 : 1
+            part.extraAttributes = {
+              light: { numComponents: 1, data: [] },
+            }
+          }
+
+          part = builder.parts.get('roompart_anim_' + rect.texture)
+          texU1 = 0
+          texV1 = 0
+          texU2 = 1
+          texV2 = 0
+          texU3 = 1
+          texV3 = 1
+          texU4 = 0
+          texV4 = 1
+          break
+        }
+      }
+
       if (part) {
         // Add the rectangle to the builder
         part.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
@@ -254,9 +316,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // find center of the room bounds, whcih is 6 values for min and max XYZ
       const center = [(boundBox[0] + boundBox[3]) / 2, (boundBox[1] + boundBox[4]) / 2, (boundBox[2] + boundBox[5]) / 2]
 
-      roomNode.metadata.centerX = center[0] + room.info.x
+      roomNode.metadata.centerX = center[0] + roomX
       roomNode.metadata.centerY = center[1]
-      roomNode.metadata.centerZ = center[2] - room.info.z
+      roomNode.metadata.centerZ = center[2] - roomZ
 
       // Water rooms are blue/green, use uniformOverrides to do this
       roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: false }
@@ -324,7 +386,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       }
 
       // We have move the mesh to the room position with the reverse of the room position
-      meshInst.position = [roomStaticMesh.x - room.info.x, -roomStaticMesh.y, -roomStaticMesh.z + room.info.z] as XYZ
+      meshInst.position = [roomStaticMesh.x - roomX, -roomStaticMesh.y, -roomStaticMesh.z + roomZ] as XYZ
       meshInst.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
       roomNode.addChild(meshInst)
     }
@@ -343,8 +405,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
   // Add entities to the world, this is messy!
   for (const entity of level.entities) {
+    const room = level.rooms[entity.room]
     // We need to invert the room offsets, as we later add the entity to the room node
-    const entityPos = [entity.x - level.rooms[entity.room].info.x, -entity.y, -entity.z + level.rooms[entity.room].info.z] as XYZ
+    const entityPos = [entity.x - room.info.x, -entity.y, -entity.z + room.info.z] as XYZ
 
     // Pickups are rendered as sprites, special case
     if (isEntityInCategory(entity, 'Pickup', level.version)) {
@@ -383,7 +446,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     let bright = 1 - entity.intensity / 0x1fff
     if (entity.intensity === -1) {
       // This is a bit of a hack, but it works
-      bright = level.rooms[entity.room].ambientIntensity / 11000
+      bright = room.ambientIntensity / 11000
     }
     meshInst.customProgramName = CUST_PROG_MESH
     meshInst.uniformOverrides = {
@@ -442,16 +505,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
   })
 
-  // List all animated textures
-  // console.log('🎨 COUNT Animated textures:', level.numAnimatedTextures)
-  // for (const animTex of level.animatedTextures) {
-  //   //console.log('🎨 VALUE Animated texture:', animTex)
-  //   console.log('🎨 object texture:', level.objectTextures[animTex])
-  //   const objText = level.objectTextures[animTex]
-  //   const textileNum = objText.tileAndFlag & 0x3fff
-  //   console.log('🎨 textileNum:', textileNum)
-  // }
-
   ctx.update = () => {
     if (Stats.frameCount % 4 === 0) {
       // Find the rooms closest to the camera
@@ -481,6 +534,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         } else {
           roomNode.enabled = false
         }
+      }
+
+      // Update animated textures
+      for (const animTex of animTextures) {
+        const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
+        animTex.material.diffuseTex = animTex.textures[frame]
       }
     }
   }

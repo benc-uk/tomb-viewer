@@ -108,7 +108,14 @@ export function debugTextiles(level: level) {
     for (let i = 0; i < level.textiles.length; i++) {
       const buffer = textile8ToBuffer(level.textiles[i], level.palette)
       const can = bufferToCanvas(buffer, 256, 256)
-      document.body.prepend(can)
+      const div = document.createElement('div')
+      div.innerHTML = `Textile ${i}`
+      div.appendChild(can)
+      div.style.border = '2px solid red'
+      div.style.textAlign = 'center'
+      div.style.margin = '5px'
+      div.style.display = 'inline-block'
+      document.body.prepend(div)
     }
   } else {
     for (let i = 0; i < level.textiles16.length; i++) {

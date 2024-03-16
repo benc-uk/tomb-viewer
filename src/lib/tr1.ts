@@ -263,9 +263,9 @@ export function parseLevel(data: DataView): tr.level {
 
     const ids = new Array<number>()
     for (let j = 0; j < textCount; j++) {
-      ids.push(data.getUint16(offset + j * 2, true))
-      offset += 2
+      ids.push(data.getInt16(offset + j * 2, true))
     }
+    offset += 2 * textCount
 
     level.animatedTextures.push({
       size: textCount,

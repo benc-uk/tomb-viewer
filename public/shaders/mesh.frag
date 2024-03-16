@@ -26,7 +26,7 @@ out vec4 outColour;
 void main() {
   vec4 texel = texture(u_mat.diffuseTex, v_texCoord);
   
-  if (texel.a < 0.4) {
+  if (texel.a < 0.6) {
     discard;
   }
 
