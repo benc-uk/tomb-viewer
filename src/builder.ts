@@ -383,7 +383,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       meshInst.customProgramName = CUST_PROG_MESH
 
       // For meshes, we override the lighting and add the room lights
-      let bright = 1 - roomStaticMesh.intensity / 0x1fff
+      const bright = 1 - roomStaticMesh.intensity / 0x1fff
       meshInst.uniformOverrides = {
         'u_mat.ambient': [bright, bright, bright],
         u_lights: roomLights.get(roomNum) ?? [],
