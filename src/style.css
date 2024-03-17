@@ -11,6 +11,10 @@ main {
   padding: 0rem;
 }
 
+[x-cloak] {
+  display: none !important;
+}
+
 select {
   padding: 0.4rem;
   margin: 0.8rem;

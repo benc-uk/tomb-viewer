@@ -25,7 +25,9 @@ Alpine.data('app', () => ({
   brightness: 1.0,
 
   levelName: '',
-  showHelp: document.location.hostname !== 'localhost',
+  showHelp: false,
+  firstLoad: document.location.hostname !== 'localhost',
+  loading: false,
   stats: '',
   error: '',
 
@@ -34,8 +36,8 @@ Alpine.data('app', () => ({
     this.height = this.width * this.aspectRatio
     this.resizeCanvas()
 
-    ctx = await Context.init()
-    ctx.start()
+    ctx = await Context.init('canvas', true, true)
+
     ctx.camera.far = config.drawDistance
     ctx.camera.fov = this.fov
     ctx.resize()
@@ -73,10 +75,6 @@ Alpine.data('app', () => ({
       ctx.camera.fpMoveSpeed = v
     })
 
-    setTimeout(() => {
-      this.showHelp = false
-    }, 3000)
-
     setInterval(() => {
       this.stats = `FPS:   ${Stats.FPS}
 Draws: ${Stats.drawCalls}
@@ -98,6 +96,7 @@ Time:  ${Stats.totalTime.toFixed(2)}`
 
   // Load a new level, wraps the buildWorld function
   async loadLevel(levelName: string) {
+    this.loading = true
     config.startPos = undefined
     this.levelName = levelName
     window.location.hash = levelName
@@ -111,6 +110,19 @@ Time:  ${Stats.totalTime.toFixed(2)}`
       this.showHelp = false
       this.error = e as string
     }
+
+    if (this.firstLoad) {
+      setTimeout(() => {
+        this.showHelp = false
+      }, 3000)
+
+      this.showHelp = true
+      this.firstLoad = false
+    }
+
+    // Actually OK to call this on every level load
+    this.loading = false
+    ctx.start()
   },
 
   // Change texture filtering, requires a world rebuild

@@ -5,6 +5,7 @@
 
 import * as TR1 from './tr1'
 import * as TR2 from './tr2'
+import * as TR3 from './tr3'
 import * as tr from './types'
 
 /**
@@ -30,13 +31,15 @@ export function parseLevel(dataArray: Uint8Array): tr.level {
       return TR1.parseLevel(data)
     case tr.version.TR2:
       return TR2.parseLevel(data)
+    case tr.version.TR3:
+      return TR3.parseLevel(data)
     default:
       throw new Error('This version of Tomb Raider is not supported yet :(')
   }
 }
 
 /**
- * Parses a mesh from the level file, this is shared between TR1 and TR2
+ * Parses a mesh from the level file, this is shared between versions
  * @param data DataView of the level file
  * @param offset Offset into the mesh data block
  */

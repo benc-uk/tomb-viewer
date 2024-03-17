@@ -108,7 +108,7 @@ export function ParseBoundingBox(data: DataView, offset: number): bounding_box {
 export enum version {
   TR1 = 0x00000020,
   TR2 = 0x0000002d,
-  TR3 = 0xff080038,
+  TR3 = 4279763000, //0xff080038,
   TR4 = 0x00345254,
   TR5 = 0x00345254,
 }

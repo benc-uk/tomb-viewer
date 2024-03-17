@@ -105,13 +105,24 @@
         <option value="TR2/17-The-Dragons-Lair.TR2">17 The Dragon's Lair</option>
         <option value="TR2/18-Home-Sweet-Home.TR2">18 Home Sweet Home</option>
         <option value="TR2/00-Laras-Home.TR2">00 Laras Home</option>
+        <option value="" disabled>&nbsp; Golden Mask</option>
+        <option value="TR2-GM/01-The-Cold-War.TR2">01 The Cold War</option>
+        <option value="TR2-GM/02-Fools-Gold.TR2">02 Fools Gold</option>
+        <option value="TR2-GM/03-Furnace-of-the-Gods.TR2">03 Furnace of the Gods</option>
+        <option value="TR2-GM/04-Kingdom.TR2">04 Kingdom</option>
+        <option value="TR2-GM/05-Nightmare-in-Vegas.TR2">05 Nightmare in Vegas</option>
+        <option value="" disabled>&nbsp; Tomb Raider 3</option>
+        <option value="TR3/01-Jungle.TR3">01 Jungle</option>
+        <option value="TR3/02-Temple-Ruins.TR3">02 Temple Ruins</option>
+        <option value="TR3/03-The-River-Ganges.TR3">03 The River Ganges</option>
+        <option value="TR3/04-Caves-of-Kaliya.TR3">04 Caves of Kaliya</option>
       </select>
 
       <canvas x-ref="canvas" :class="{'pixelated': !smooth, 'fullWidth': fullWidth}"></canvas>
 
       <div x-show="error" id="error" class="blurbox" x-text="error"></div>
 
-      <div x-show="showHelp" id="help" class="blurbox" @click="showHelp = false">
+      <div x-cloak x-show="showHelp" id="help" class="blurbox" @click="showHelp = false">
         Tomb Raider - WebGL Edition<br />Ben Coleman 2024, v0.0.7
         <ul>
           <li>Cursor / WASD - Move</li>
@@ -121,6 +132,10 @@
           <li>2 - Open/close doors</li>
           <li>H - Show or hide this help</li>
         </ul>
+      </div>
+
+      <div x-cloak x-show="loading" id="help" class="blurbox">
+        <h1>Loading...</h1>
       </div>
     </main>
     <script type="module" src="/src/main.ts"></script>

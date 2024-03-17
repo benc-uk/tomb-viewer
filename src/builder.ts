@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
-import { getLevelFile } from './lib/file'
+import { getLevelFile, loadingDelay } from './lib/misc'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
@@ -75,33 +75,33 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   }
 
   // Create all animated texture materials
-  console.log(`💃 Creating ${level.animatedTextures.length} animated textures...`)
-  for (const animTex of level.animatedTextures) {
-    const textures = new Array<WebGLTexture>()
-    for (const objTexId of animTex.objTexIds) {
-      const ot = level.objectTextures[objTexId]
-      const texTileIndex = ot.tileAndFlag & 0x3fff
+  // console.log(`💃 Creating ${level.animatedTextures.length} animated textures...`)
+  // for (const animTex of level.animatedTextures) {
+  //   const textures = new Array<WebGLTexture>()
+  //   for (const objTexId of animTex.objTexIds) {
+  //     const ot = level.objectTextures[objTexId]
+  //     const texTileIndex = ot.tileAndFlag & 0x3fff
 
-      const u1 = ufixed16ToFloat(ot.vertices[0].x)
-      const v1 = ufixed16ToFloat(ot.vertices[0].y)
-      const u2 = ufixed16ToFloat(ot.vertices[1].x)
-      const v3 = ufixed16ToFloat(ot.vertices[2].y)
+  //     const u1 = ufixed16ToFloat(ot.vertices[0].x)
+  //     const v1 = ufixed16ToFloat(ot.vertices[0].y)
+  //     const u2 = ufixed16ToFloat(ot.vertices[1].x)
+  //     const v3 = ufixed16ToFloat(ot.vertices[2].y)
 
-      // Snip the section, from the larger textile image texture
-      const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], Math.round(u1), Math.round(v1), Math.round(u2 - u1), Math.round(v3 - v1), 256)
-      const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
-      textures.push(tex!)
-    }
+  //     // Snip the section, from the larger textile image texture
+  //     const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], Math.round(u1), Math.round(v1), Math.round(u2 - u1), Math.round(v3 - v1), 256)
+  //     const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
+  //     textures.push(tex!)
+  //   }
 
-    const m = new Material()
-    m.diffuseTex = textures[0]
+  //   const m = new Material()
+  //   m.diffuseTex = textures[0]
 
-    animTextures.push({
-      material: m,
-      textures,
-      objTexIds: animTex.objTexIds,
-    })
-  }
+  //   animTextures.push({
+  //     material: m,
+  //     textures,
+  //     objTexIds: animTex.objTexIds,
+  //   })
+  // }
 
   // Create all GSOTS models for meshes
   for (const [meshId, mesh] of level.meshes) {
@@ -397,6 +397,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     }
 
     roomNode.enabled = false
+
+    // Fake loading delay, to make it look like we're doing something :)
+    await loadingDelay(6)
   }
 
   // END: Room loop, phew!
