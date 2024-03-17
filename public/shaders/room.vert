@@ -1,7 +1,7 @@
 #version 300 es
 precision highp float;
 
-const int MAX_LIGHTS = 6;
+const int MAX_LIGHTS = 8;
 
 // ============================================================================
 // Custom Tomb Raider fragment shader

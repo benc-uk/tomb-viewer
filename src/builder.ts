@@ -13,6 +13,8 @@ import { isEntityInCategory } from './lib/entity'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
 import { CUST_PROG_MESH } from './main'
 
+const MAX_LIGHTS = 8
+
 type SimpleLight = {
   pos: XYZ
   intensity: number
@@ -325,7 +327,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       if (isWaterRoom(room)) {
         roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: true }
       }
-
       roomNode.addChild(roomInstance)
 
       if (isWaterRoom(room)) {
@@ -334,6 +335,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
       // Add room lights, we bypass the GSOTS light system and use our own!
       const roomLightArray = []
+      let lightCount = 0
       for (const light of room.lights) {
         // Add to the room light data array
         roomLightArray.push({
@@ -343,6 +345,9 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         } as SimpleLight)
 
         roomLights.set(roomNum, roomLightArray)
+        if (++lightCount >= MAX_LIGHTS) {
+          break
+        }
       }
 
       // Add room light data to the room model
@@ -375,10 +380,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
-      const bright = 1 - roomStaticMesh.intensity / 0x1fff
-
       meshInst.customProgramName = CUST_PROG_MESH
+
       // For meshes, we override the lighting and add the room lights
+      let bright = 1 - roomStaticMesh.intensity / 0x1fff
       meshInst.uniformOverrides = {
         'u_mat.ambient': [bright, bright, bright],
         u_lights: roomLights.get(roomNum) ?? [],
@@ -404,6 +409,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   }
 
   // Add entities to the world, this is messy!
+
   for (const entity of level.entities) {
     const room = level.rooms[entity.room]
     // We need to invert the room offsets, as we later add the entity to the room node

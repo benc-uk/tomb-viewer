@@ -1,7 +1,7 @@
 #version 300 es
 precision highp float;
 
-const int MAX_LIGHTS = 6;
+const int MAX_LIGHTS = 8;
 
 // ============================================================================
 // Custom Tomb Raider fragment shader
@@ -52,8 +52,10 @@ void main() {
     vec3 L = normalize(u_lights[i].pos - vertposition.xyz);
     float lambertTerm = dot(N, L);
     lambertTerm = max(lambertTerm, 0.0);
-    v_light += lambertTerm * ((u_lights[i].intensity) / float(u_numLights));
+    v_light += lambertTerm * (u_lights[i].intensity / float(u_numLights));
   }
+
+  v_light = clamp(v_light, 0.0, 1.0);
 
   gl_Position = u_worldViewProjection * position;
 }
