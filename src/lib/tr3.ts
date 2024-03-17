@@ -68,10 +68,9 @@ export function parseLevel(data: DataView): tr.level {
     room.roomData.numVertices = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numVertices; j++) {
-      const room_vertex = tr.ParseRoomVertexTR2(data, offset)
-      room_vertex.lighting = 0
+      const room_vertex = tr.ParseRoomVertexTR3(data, offset)
       room.roomData.vertices.push(room_vertex)
-      offset += tr.room_vertex_size_tr2 // Note length of vertex struct is larger in TR2
+      offset += tr.room_vertex_size_tr2 // Note length of vertex struct is larger in TR2 & TR3
     }
 
     room.roomData.numRectangles = data.getUint16(offset, true)

@@ -108,7 +108,7 @@ export function ParseBoundingBox(data: DataView, offset: number): bounding_box {
 export enum version {
   TR1 = 0x00000020,
   TR2 = 0x0000002d,
-  TR3 = 4279763000, //0xff080038,
+  TR3 = 0xff180038,
   TR4 = 0x00345254,
   TR5 = 0x00345254,
 }
@@ -168,6 +168,8 @@ export type level = {
 // Colours
 // =============================================================================
 
+const FIVEBIT_TO_EIGHTBIT = 255 / 31
+
 export type colour = {
   r: uint8_t
   g: uint8_t
@@ -224,6 +226,15 @@ export function ParsePalette16(data: DataView, offset: number): colour4[] {
   }
 
   return palette
+}
+
+/** Convert 15 bit colour to a RGB tuple */
+export function colour15ToRGB(colour: uint16_t): number[] {
+  const red = (colour & 0x7c00) >> 10
+  const green = (colour & 0x3e0) >> 5
+  const blue = colour & 0x1f
+
+  return [Math.floor(red * FIVEBIT_TO_EIGHTBIT), Math.floor(green * FIVEBIT_TO_EIGHTBIT), Math.floor(blue * FIVEBIT_TO_EIGHTBIT)]
 }
 
 // =============================================================================
@@ -363,22 +374,31 @@ export function NewRoomData(): room_data {
 export type room_vertex = {
   vertex: vertex
   lighting: int16_t
+  colour: int16_t // Only used in TR3
 }
 
 export const room_vertex_size = 8
 export const room_vertex_size_tr2 = 12
 
+/**
+ * Parses both TR1 & TR2 room vertexes, the extra parts in tr2_room_vertex are ignored
+ */
 export function ParseRoomVertex(data: DataView, offset: number): room_vertex {
   return {
     vertex: ParseVertex(data, offset),
     lighting: data.getInt16(offset + 6, true),
+    // In TR2 Attributes and Lighting2 are here but we don't use them
   } as room_vertex
 }
 
-export function ParseRoomVertexTR2(data: DataView, offset: number): room_vertex {
+/**
+ * Only used by TR3
+ */
+export function ParseRoomVertexTR3(data: DataView, offset: number): room_vertex {
   return {
     vertex: ParseVertex(data, offset),
-    lighting: data.getInt16(offset + 10, true),
+    lighting: data.getInt16(offset + 6, true),
+    colour: data.getInt16(offset + 10, true),
   } as room_vertex
 }
 

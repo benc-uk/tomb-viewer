@@ -7,7 +7,7 @@ import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureC
 import { getLevelFile, loadingDelay } from './lib/misc'
 import { parseLevel } from './lib/parser'
 import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
-import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level } from './lib/types'
+import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level, colour15ToRGB, version } from './lib/types'
 import { AppConfig } from './config'
 import { isEntityInCategory } from './lib/entity'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
@@ -225,10 +225,22 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         texV4 += uvPadding
       }
 
-      const v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
-      const v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
-      const v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
-      const v4light = lightAdjust(1 - rv4.lighting / 0x1fff)
+      let v1light, v2light, v3light, v4light
+      if (level.version === version.TR3) {
+        const rv1rgb = colour15ToRGB(rv1.colour)
+        v1light = lightAdjust(rv1rgb[0] / 255 + rv1rgb[1] / 255 + rv1rgb[2] / 255 / 3)
+        const rv2rgb = colour15ToRGB(rv2.colour)
+        v2light = lightAdjust(rv2rgb[0] / 255 + rv2rgb[1] / 255 + rv2rgb[2] / 255 / 3)
+        const rv3rgb = colour15ToRGB(rv3.colour)
+        v3light = lightAdjust(rv3rgb[0] / 255 + rv3rgb[1] / 255 + rv3rgb[2] / 255 / 3)
+        const rv4rgb = colour15ToRGB(rv4.colour)
+        v4light = lightAdjust(rv4rgb[0] / 255 + rv4rgb[1] / 255 + rv4rgb[2] / 255 / 3)
+      } else {
+        v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
+        v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
+        v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+        v4light = lightAdjust(1 - rv4.lighting / 0x1fff)
+      }
 
       // This trick gets the rectangle added to the right part with the matching textile
       let part = builder.parts.get('roompart_' + texTileIndex)
@@ -295,9 +307,19 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
       const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
-      const v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
-      const v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
-      const v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+      let v1light, v2light, v3light
+      if (level.version === version.TR3) {
+        const rv1rgb = colour15ToRGB(rv1.colour)
+        v1light = rv1rgb[0] / 255 + rv1rgb[1] / 255 + rv1rgb[2] / 255 / 3
+        const rv2rgb = colour15ToRGB(rv2.colour)
+        v2light = rv2rgb[0] / 255 + rv2rgb[1] / 255 + rv2rgb[2] / 255 / 3
+        const rv3rgb = colour15ToRGB(rv3.colour)
+        v3light = rv3rgb[0] / 255 + rv3rgb[1] / 255 + rv3rgb[2] / 255 / 3
+      } else {
+        v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
+        v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
+        v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+      }
 
       const part = builder.parts.get('roompart_' + texTileIndex)
       if (part) {
@@ -383,7 +405,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       meshInst.customProgramName = CUST_PROG_MESH
 
       // For meshes, we override the lighting and add the room lights
-      const bright = 1 - roomStaticMesh.intensity / 0x1fff
+      let bright = 1 - roomStaticMesh.intensity / 0x1fff
+      if (level.version === version.TR3) {
+        bright *= 1.8
+      }
       meshInst.uniformOverrides = {
         'u_mat.ambient': [bright, bright, bright],
         u_lights: roomLights.get(roomNum) ?? [],
