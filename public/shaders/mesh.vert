@@ -19,7 +19,7 @@ uniform mat4 u_world;
 
 // Output varying's to pass to fragment shader
 out vec2 v_texCoord;
-out float v_light;
+out vec3 v_light;
 
 struct Material {
   vec3 ambient;
@@ -33,7 +33,7 @@ uniform Material u_mat;
 
 struct Light {
   vec3 pos;
-  float intensity;
+  vec3 intensity; // Is a RGB tuple for coloured lights
   float maxDist;
 };
 
@@ -42,7 +42,7 @@ uniform int u_numLights;
 
 void main() {
   v_texCoord = texcoord;
-  v_light = u_mat.ambient.r;
+  v_light = u_mat.ambient;
 
   vec3 N = normalize((u_worldInverseTranspose * vec4(normal, 0)).xyz);
   vec4 vertposition = u_world * position;

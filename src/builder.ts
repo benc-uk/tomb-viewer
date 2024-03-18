@@ -3,7 +3,7 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
+import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model, RGB } from 'gsots3d'
 
 import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level, colour15ToRGB, version, tuple } from './lib/types'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
@@ -18,7 +18,7 @@ const MAX_LIGHTS = 8
 
 type SimpleLight = {
   pos: XYZ
-  intensity: number
+  intensity: RGB
   maxDist: number
 }
 
@@ -119,6 +119,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         textures.push(tex!)
       } catch (e) {
         console.error(`💥 Error: Snipping animated texture failed, ${e}`)
+        console.error(`💥 Error: ${u1},${v1} ${u2},`)
       }
     }
 
@@ -390,29 +391,33 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       if (isWaterRoom(room)) {
         roomNode.metadata.water = true
       }
-
-      // Add room lights, we bypass the GSOTS light system and use our own!
-      const roomLightArray = []
-      let lightCount = 0
-      for (const light of room.lights) {
-        // Add to the room light data array
-        roomLightArray.push({
-          pos: [light.x, -light.y, -light.z],
-          intensity: light.intensity / 0x1fff,
-          maxDist: light.fade,
-        } as SimpleLight)
-
-        roomLights.set(roomNum, roomLightArray)
-        if (++lightCount >= MAX_LIGHTS) {
-          break
-        }
-      }
-
-      // Add room light data to the room model
-      roomInstance.uniformOverrides = { ...roomInstance.uniformOverrides, u_lights: roomLightArray, u_numLights: room.numLights }
     } catch (e) {
       console.error(`💥 Error building room geometry! ${roomNum - 1}`)
       console.error(e)
+    }
+
+    // Add room lights, we bypass the GSOTS light system and use our own!
+    const roomLightArray = []
+    let lightCount = 0
+    for (const light of room.lights) {
+      const intensity = light.intensity / 0x1fff
+      let intensityRGB = [intensity, intensity, intensity]
+
+      if (light.colour) {
+        intensityRGB = [light.colour.r / 255, light.colour.g / 255, light.colour.b / 255]
+      }
+
+      // Add to the room light data array
+      roomLightArray.push({
+        pos: [light.x, -light.y, -light.z],
+        intensity: intensityRGB,
+        maxDist: light.fade,
+      } as SimpleLight)
+
+      roomLights.set(roomNum, roomLightArray)
+      if (++lightCount >= MAX_LIGHTS) {
+        break
+      }
     }
 
     // Static scenic sprites, these are only really used in TR1 and only in a few levels
@@ -428,7 +433,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
     // Add room static meshes
     for (const roomStaticMesh of room.staticMeshes) {
-      // Find the staticMesh, *weird* we have to do a search here, normally IDs are array indexes
+      // Find the staticMesh, which is found by ID not array index
       const staticMesh = level.staticMeshes.get(roomStaticMesh.meshId)
       if (!staticMesh) {
         console.debug(`🤔 Room static mesh not found: ${roomStaticMesh.meshId}`)
@@ -441,14 +446,21 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       meshInst.customProgramName = CUST_PROG_MESH
 
       // For meshes, we override the lighting and add the room lights
-      let bright = 1 - roomStaticMesh.intensity / 0x1fff
+      let staticIntens = 1 - roomStaticMesh.intensity / 0x1fff
+      let meshAmbient = [staticIntens, staticIntens, staticIntens]
+      if (level.version === version.TR3) {
+        // In TR3 convert intensity as a 15-bit colour to RGB
+        meshAmbient = colour15ToRGB(roomStaticMesh.intensity)
+      }
+
       meshInst.uniformOverrides = {
-        'u_mat.ambient': [bright, bright, bright],
+        // Static mesh intensity is just ambient, we add room lights too
+        'u_mat.ambient': meshAmbient,
         u_lights: roomLights.get(roomNum) ?? [],
         u_numLights: roomLights.get(roomNum)?.length ?? 0,
       }
 
-      // We have move the mesh to the room position with the reverse of the room position
+      // We move the mesh to the room position with the *inverse* of the room position
       meshInst.position = [roomStaticMesh.x - roomX, -roomStaticMesh.y, -roomStaticMesh.z + roomZ] as XYZ
       meshInst.rotateY(entityAngleToDeg(roomStaticMesh.rotation) * (Math.PI / 180))
       roomNode.addChild(meshInst)

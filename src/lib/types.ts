@@ -229,7 +229,9 @@ export function ParsePalette16(data: DataView, offset: number): colour4[] {
 }
 
 /** Convert 15 bit colour to a 0-1 RGB tuple */
-export function colour15ToRGB(colour: uint16_t): tuple {
+export function colour15ToRGB(colour?: uint16_t): tuple {
+  if (!colour) return [0, 0, 0]
+
   let red = (colour & 0x7c00) >> 10
   let green = (colour & 0x3e0) >> 5
   let blue = colour & 0x1f
@@ -378,7 +380,7 @@ export function NewRoomData(): room_data {
 export type room_vertex = {
   vertex: vertex
   lighting: int16_t
-  colour: int16_t // Only used in TR3
+  colour?: int16_t // Only present in TR3
 }
 
 export const room_vertex_size = 8
@@ -453,6 +455,7 @@ export function ParseRoomStaticMeshTR2(data: DataView, offset: number): room_sta
     y: data.getInt32(offset + 4, true),
     z: data.getInt32(offset + 8, true),
     rotation: data.getUint16(offset + 12, true),
+    // Note in TR3 we treat intensity as 15 bit RGB color, but we parse it the same
     intensity: data.getUint16(offset + 14, true),
     // Skip intensity2 uint16_t isn't used anyhow!
     meshId: data.getUint16(offset + 18, true),
@@ -625,6 +628,7 @@ export type room_light = {
   z: int32_t
   intensity: uint16_t
   fade: uint32_t
+  colour?: colour // Only in TR3
 }
 
 export const room_light_size = 18
@@ -649,6 +653,26 @@ export function ParseRoomLightTR2(data: DataView, offset: number): room_light {
     // Skip intensity2 uint16_t was never used in real game
     fade: data.getUint32(offset + 16, true),
     // Skip fade2 uint32_t was never used in real game
+  } as room_light
+}
+
+export function ParseRoomLightTR3(data: DataView, offset: number): room_light | undefined {
+  // TR3 introduced two light types, we only use type 0 which is point
+  // Note the TRosettaStone3 documentation is wrong about the light types!
+  const type = data.getUint8(offset + 15)
+
+  // These are directional sun lights, we ignore them
+  if (type === 1) {
+    return undefined
+  }
+
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    colour: ParseColour(data, offset + 12),
+    intensity: data.getInt32(offset + 16, true),
+    fade: data.getInt32(offset + 20, true),
   } as room_light
 }
 

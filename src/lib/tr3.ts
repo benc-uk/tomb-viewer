@@ -124,10 +124,10 @@ export function parseLevel(data: DataView): tr.level {
     offset += 2
     room.lights = new Array<tr.room_light>()
     for (let j = 0; j < room.numLights; j++) {
-      // FIXME: Not parsing TR3 lights yet
-      const roomLight = tr.ParseRoomLightTR2(data, offset)
-      roomLight.intensity = 0x1fff // HACK: Set intensity to max
-      room.lights.push(roomLight)
+      const roomLight = tr.ParseRoomLightTR3(data, offset)
+      if (roomLight) {
+        room.lights.push(roomLight)
+      }
       offset += tr.room_light_size_tr2
     }
 
@@ -135,10 +135,7 @@ export function parseLevel(data: DataView): tr.level {
     offset += 2
     room.staticMeshes = new Array<tr.room_staticmesh>()
     for (let j = 0; j < room.numStaticMeshes; j++) {
-      // FIXME: Not parsing TR3 tr3_room_staticmesh yet
-      const rsm = tr.ParseRoomStaticMeshTR2(data, offset)
-      rsm.intensity = 0x1fff // HACK: Set intensity to max
-      room.staticMeshes.push(rsm)
+      room.staticMeshes.push(tr.ParseRoomStaticMeshTR2(data, offset))
       offset += tr.room_staticmesh_size_tr2
     }
 

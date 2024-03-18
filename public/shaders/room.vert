@@ -1,8 +1,6 @@
 #version 300 es
 precision highp float;
 
-const int MAX_LIGHTS = 8;
-
 // ============================================================================
 // Custom Tomb Raider fragment shader
 // Ben Coleman, 2023
