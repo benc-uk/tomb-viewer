@@ -4,13 +4,14 @@
 // =============================================================================
 
 import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model } from 'gsots3d'
-import { getLevelFile, loadingDelay } from './lib/misc'
-import { parseLevel } from './lib/parser'
-import { getRegionFromBuffer, textile8ToBuffer } from './lib/textures'
-import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level, colour15ToRGB, version } from './lib/types'
-import { AppConfig } from './config'
-import { isEntityInCategory } from './lib/entity'
+
+import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level, colour15ToRGB, version, tuple } from './lib/types'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
+import { getRegionFromBuffer, textile16ToBuffer, textile8ToBuffer } from './lib/textures'
+import { isEntityInCategory } from './lib/entity'
+import { parseLevel } from './lib/parser'
+import { getLevelFile, loadingDelay } from './lib/misc'
+import { AppConfig } from './config'
 import { CUST_PROG_MESH } from './main'
 
 const MAX_LIGHTS = 8
@@ -54,11 +55,20 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   const animTextures = new Array<AnimatedTexture>()
 
   // Gather all the textiles (texture tiles) into materials and usable texture maps
-  for (const textile of level.textiles) {
-    const buffer = textile8ToBuffer(textile, level.palette)
-    const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
-    materials.push(mat)
-    tileBuffers.push(buffer)
+  if (level.version === version.TR1) {
+    for (const textile of level.textiles) {
+      const buffer = textile8ToBuffer(textile, level.palette)
+      const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
+      materials.push(mat)
+      tileBuffers.push(buffer)
+    }
+  } else {
+    for (const textile of level.textiles16) {
+      const buffer = textile16ToBuffer(textile)
+      const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
+      materials.push(mat)
+      tileBuffers.push(buffer)
+    }
   }
 
   // Create all sprite materials
@@ -75,33 +85,52 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   }
 
   // Create all animated texture materials
-  // console.log(`💃 Creating ${level.animatedTextures.length} animated textures...`)
-  // for (const animTex of level.animatedTextures) {
-  //   const textures = new Array<WebGLTexture>()
-  //   for (const objTexId of animTex.objTexIds) {
-  //     const ot = level.objectTextures[objTexId]
-  //     const texTileIndex = ot.tileAndFlag & 0x3fff
+  // TODO: Needs a complete rethink ground up if this is to work with TR3
+  console.log(`💃 Creating ${level.animatedTextures.length} animated textures...`)
+  for (const animTex of level.animatedTextures) {
+    const textures = new Array<WebGLTexture>()
+    for (const objTexId of animTex.objTexIds) {
+      const objTex = level.objectTextures[objTexId & 0x3fff]
+      if (!objTex) {
+        console.error(`💥 Error: Missing object texture ${objTexId} in animated texture`)
+        continue
+      }
 
-  //     const u1 = ufixed16ToFloat(ot.vertices[0].x)
-  //     const v1 = ufixed16ToFloat(ot.vertices[0].y)
-  //     const u2 = ufixed16ToFloat(ot.vertices[1].x)
-  //     const v3 = ufixed16ToFloat(ot.vertices[2].y)
+      const texTileIndex = objTex.tileAndFlag & 0x3fff
 
-  //     // Snip the section, from the larger textile image texture
-  //     const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], Math.round(u1), Math.round(v1), Math.round(u2 - u1), Math.round(v3 - v1), 256)
-  //     const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
-  //     textures.push(tex!)
-  //   }
+      const u1 = ufixed16ToFloat(objTex.vertices[0].x)
+      const v1 = ufixed16ToFloat(objTex.vertices[0].y)
+      const u2 = ufixed16ToFloat(objTex.vertices[1].x)
+      const v2 = ufixed16ToFloat(objTex.vertices[1].y)
+      const u3 = ufixed16ToFloat(objTex.vertices[2].x)
+      const v3 = ufixed16ToFloat(objTex.vertices[2].y)
+      const u4 = ufixed16ToFloat(objTex.vertices[3].x)
+      const v4 = ufixed16ToFloat(objTex.vertices[3].y)
 
-  //   const m = new Material()
-  //   m.diffuseTex = textures[0]
+      const x = Math.round(u1)
+      const y = Math.round(v1)
+      const width = Math.abs(Math.round(u2 - u1))
+      const height = Math.abs(Math.round(v3 - v1))
 
-  //   animTextures.push({
-  //     material: m,
-  //     textures,
-  //     objTexIds: animTex.objTexIds,
-  //   })
-  // }
+      // Snip the section, from the larger textile image texture
+      try {
+        const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], x, y, width, height, 256)
+        const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
+        textures.push(tex!)
+      } catch (e) {
+        console.error(`💥 Error: Snipping animated texture failed, ${e}`)
+      }
+    }
+
+    const m = new Material()
+    m.diffuseTex = textures[0]
+
+    animTextures.push({
+      material: m,
+      textures,
+      objTexIds: animTex.objTexIds,
+    })
+  }
 
   // Create all GSOTS models for meshes
   for (const [meshId, mesh] of level.meshes) {
@@ -134,7 +163,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
     for (let i = 0; i < materials.length; i++) {
       const part = builder.newPart('roompart_' + i, materials[i])
       part.extraAttributes = {
-        light: { numComponents: 1, data: [] },
+        colour: { numComponents: 3, data: [] },
       }
     }
 
@@ -151,10 +180,14 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const v4 = trVertToXZY(rv4.vertex)
 
       // Texture coordinates are in the bizarrely named objectTextures
-      const objTexture = level.objectTextures[rect.texture]
+
+      // TR3 added dual-sided textures with a bit in 15, so we only use the first 14 bits
+      let objTexture = level.objectTextures[rect.texture & 0x3fff]
       if (!objTexture) {
-        console.debug(`💥 Error: Missing texture for rect ${rect.texture} in room ${roomNum}`)
+        console.error(`💥 Error: Missing rect texture ${rect.texture} in room ${roomNum}`)
         continue
+      }
+      if (objTexture.attribute == 2) {
       }
 
       // First 14 bits (little endian) of tileAndFlag is the index into the textile array
@@ -176,70 +209,74 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const uvCenterX = (texU1 + texU2 + texU3 + texU4) / 4
       const uvCenterY = (texV1 + texV2 + texV3 + texV4) / 4
 
-      if (texU1 > uvCenterX) {
-        texU1 -= uvPadding
-      }
-      if (texU1 < uvCenterX) {
-        texU1 += uvPadding
-      }
-      if (texU2 > uvCenterX) {
-        texU2 -= uvPadding
-      }
-      if (texU2 < uvCenterX) {
-        texU2 += uvPadding
-      }
-      if (texU3 > uvCenterX) {
-        texU3 -= uvPadding
-      }
-      if (texU3 < uvCenterX) {
-        texU3 += uvPadding
-      }
-      if (texU4 > uvCenterX) {
-        texU4 -= uvPadding
-      }
-      if (texU4 < uvCenterX) {
-        texU4 += uvPadding
-      }
-      if (texV1 > uvCenterY) {
-        texV1 -= uvPadding
-      }
-      if (texV1 < uvCenterY) {
-        texV1 += uvPadding
-      }
-      if (texV2 > uvCenterY) {
-        texV2 -= uvPadding
-      }
-      if (texV2 < uvCenterY) {
-        texV2 += uvPadding
-      }
-      if (texV3 > uvCenterY) {
-        texV3 -= uvPadding
-      }
-      if (texV3 < uvCenterY) {
-        texV3 += uvPadding
-      }
-      if (texV4 > uvCenterY) {
-        texV4 -= uvPadding
-      }
-      if (texV4 < uvCenterY) {
-        texV4 += uvPadding
+      // Mad hack to fix texture bleeding
+      if (true) {
+        if (texU1 > uvCenterX) {
+          texU1 -= uvPadding
+        }
+        if (texU1 < uvCenterX) {
+          texU1 += uvPadding
+        }
+        if (texU2 > uvCenterX) {
+          texU2 -= uvPadding
+        }
+        if (texU2 < uvCenterX) {
+          texU2 += uvPadding
+        }
+        if (texU3 > uvCenterX) {
+          texU3 -= uvPadding
+        }
+        if (texU3 < uvCenterX) {
+          texU3 += uvPadding
+        }
+        if (texU4 > uvCenterX) {
+          texU4 -= uvPadding
+        }
+        if (texU4 < uvCenterX) {
+          texU4 += uvPadding
+        }
+        if (texV1 > uvCenterY) {
+          texV1 -= uvPadding
+        }
+        if (texV1 < uvCenterY) {
+          texV1 += uvPadding
+        }
+        if (texV2 > uvCenterY) {
+          texV2 -= uvPadding
+        }
+        if (texV2 < uvCenterY) {
+          texV2 += uvPadding
+        }
+        if (texV3 > uvCenterY) {
+          texV3 -= uvPadding
+        }
+        if (texV3 < uvCenterY) {
+          texV3 += uvPadding
+        }
+        if (texV4 > uvCenterY) {
+          texV4 -= uvPadding
+        }
+        if (texV4 < uvCenterY) {
+          texV4 += uvPadding
+        }
       }
 
-      let v1light, v2light, v3light, v4light
+      let v1Col: tuple, v2Col: tuple, v3Col: tuple, v4Col: tuple
       if (level.version === version.TR3) {
-        const rv1rgb = colour15ToRGB(rv1.colour)
-        v1light = lightAdjust(rv1rgb[0] / 255 + rv1rgb[1] / 255 + rv1rgb[2] / 255 / 3)
-        const rv2rgb = colour15ToRGB(rv2.colour)
-        v2light = lightAdjust(rv2rgb[0] / 255 + rv2rgb[1] / 255 + rv2rgb[2] / 255 / 3)
-        const rv3rgb = colour15ToRGB(rv3.colour)
-        v3light = lightAdjust(rv3rgb[0] / 255 + rv3rgb[1] / 255 + rv3rgb[2] / 255 / 3)
-        const rv4rgb = colour15ToRGB(rv4.colour)
-        v4light = lightAdjust(rv4rgb[0] / 255 + rv4rgb[1] / 255 + rv4rgb[2] / 255 / 3)
+        v1Col = colour15ToRGB(rv1.colour)
+        v2Col = colour15ToRGB(rv2.colour)
+        v3Col = colour15ToRGB(rv3.colour)
+        v4Col = colour15ToRGB(rv4.colour)
       } else {
-        v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
-        v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
-        v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
-        v4light = lightAdjust(1 - rv4.lighting / 0x1fff)
+        const v1L = lightAdjust(1 - rv1.lighting / 0x1fff)
+        const v2L = lightAdjust(1 - rv2.lighting / 0x1fff)
+        const v3L = lightAdjust(1 - rv3.lighting / 0x1fff)
+        const v4L = lightAdjust(1 - rv4.lighting / 0x1fff)
+
+        v1Col = [v1L, v1L, v1L]
+        v2Col = [v2L, v2L, v2L]
+        v3Col = [v3L, v3L, v3L]
+        v4Col = [v4L, v4L, v4L]
       }
 
       // This trick gets the rectangle added to the right part with the matching textile
@@ -248,12 +285,11 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // Special check for animated textures
       // Search all animTextures and the objectTextureIds for a match
       for (const animTex of animTextures) {
-        if (animTex.objTexIds.includes(rect.texture)) {
+        if (animTex.objTexIds.includes(rect.texture & 0x3fff)) {
           if (!builder.parts.has('roompart_anim_' + rect.texture)) {
             const part = builder.newPart('roompart_anim_' + rect.texture, animTex.material)
-            animTex.material.opacity = isWaterRoom(room) ? 0.5 : 1
             part.extraAttributes = {
-              light: { numComponents: 1, data: [] },
+              colour: { numComponents: 3, data: [] },
             }
           }
 
@@ -276,7 +312,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
         // We need to push light data for each vertex
         // AND we need to have data for both triangles in the rectangle, so 6 vertexes
-        part.extraAttributes?.light?.data.push(v1light, v4light, v3light, v1light, v3light, v2light)
+        part.extraAttributes?.colour?.data.push(...v1Col, ...v4Col, ...v3Col, ...v1Col, ...v3Col, ...v2Col)
       }
     }
 
@@ -290,43 +326,43 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       const v2 = trVertToXZY(rv2.vertex)
       const v3 = trVertToXZY(rv3.vertex)
 
-      // Texture coordinates logic same as rectangles
-      const objTexture = level.objectTextures[tri.texture]
+      // Texture coordinates logic same as rectangles, same as before use 14 bits
+      const objTexture = level.objectTextures[tri.texture & 0x3fff]
       if (!objTexture) {
-        console.debug(`💥 Error: Missing texture for tri ${tri.texture} in room ${roomNum}`)
+        console.error(`💥 Error: Missing triangle texture ${tri.texture} in room ${roomNum}`)
         continue
       }
 
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
       // Get the UV of the four corners in objTexture.vertices
-      const texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
-      const texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
-      const texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
-      const texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
-      const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
-      const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
+      let texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
+      let texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
+      let texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
+      let texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
+      let texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
+      let texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
-      let v1light, v2light, v3light
+      let v1Col: tuple, v2Col: tuple, v3Col: tuple
       if (level.version === version.TR3) {
-        const rv1rgb = colour15ToRGB(rv1.colour)
-        v1light = rv1rgb[0] / 255 + rv1rgb[1] / 255 + rv1rgb[2] / 255 / 3
-        const rv2rgb = colour15ToRGB(rv2.colour)
-        v2light = rv2rgb[0] / 255 + rv2rgb[1] / 255 + rv2rgb[2] / 255 / 3
-        const rv3rgb = colour15ToRGB(rv3.colour)
-        v3light = rv3rgb[0] / 255 + rv3rgb[1] / 255 + rv3rgb[2] / 255 / 3
+        v1Col = colour15ToRGB(rv1.colour)
+        v2Col = colour15ToRGB(rv2.colour)
+        v3Col = colour15ToRGB(rv3.colour)
       } else {
-        v1light = lightAdjust(1 - rv1.lighting / 0x1fff)
-        v2light = lightAdjust(1 - rv2.lighting / 0x1fff)
-        v3light = lightAdjust(1 - rv3.lighting / 0x1fff)
+        const v1L = lightAdjust(1 - rv1.lighting / 0x1fff)
+        const v2L = lightAdjust(1 - rv2.lighting / 0x1fff)
+        const v3L = lightAdjust(1 - rv3.lighting / 0x1fff)
+
+        v1Col = [v1L, v1L, v1L]
+        v2Col = [v2L, v2L, v2L]
+        v3Col = [v3L, v3L, v3L]
       }
 
-      const part = builder.parts.get('roompart_' + texTileIndex)
+      let part = builder.parts.get('roompart_' + texTileIndex)
       if (part) {
         part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
         // We need to push light data for each vertex
-        part.extraAttributes?.light?.data.push(v1light, v3light, v2light)
-        part.extraAttributes?.off?.data.push(1, 3, 2)
+        part.extraAttributes?.colour?.data.push(...v1Col, ...v3Col, ...v2Col)
       }
     }
 
@@ -406,9 +442,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
       // For meshes, we override the lighting and add the room lights
       let bright = 1 - roomStaticMesh.intensity / 0x1fff
-      if (level.version === version.TR3) {
-        bright *= 1.8
-      }
       meshInst.uniformOverrides = {
         'u_mat.ambient': [bright, bright, bright],
         u_lights: roomLights.get(roomNum) ?? [],
@@ -571,9 +604,12 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       }
 
       // Update animated textures
-      for (const animTex of animTextures) {
-        const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
-        animTex.material.diffuseTex = animTex.textures[frame]
+      // FIXME: Animated textures are not working in TR3 AT ALL!
+      if (level.version != version.TR3) {
+        for (const animTex of animTextures) {
+          const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
+          animTex.material.diffuseTex = animTex.textures[frame]
+        }
       }
     }
   }

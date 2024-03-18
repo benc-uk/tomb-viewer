@@ -69,6 +69,13 @@ export function textile16ToBuffer(tex: textile16) {
 }
 
 export function getRegionFromBuffer(srcBuffer: Uint8Array, offsetX: number, offsetY: number, width: number, height: number, srcWidth = 256) {
+  if (offsetX < 0 || offsetY < 0 || offsetX + width > 256 || offsetY + height > 256) {
+    throw new Error('Invalid region when getting region from buffer')
+  }
+  if (width < 0 || height < 0) {
+    throw new Error('Invalid width or height when getting region from buffer')
+  }
+
   const buffer = new ArrayBuffer(width * height * 4)
   const imgData = new Uint8Array(buffer)
 
@@ -121,7 +128,14 @@ export function debugTextiles(level: level) {
     for (let i = 0; i < level.textiles16.length; i++) {
       const buffer = textile16ToBuffer(level.textiles16[i])
       const can = bufferToCanvas(buffer, 256, 256)
-      document.body.prepend(can)
+      const div = document.createElement('div')
+      div.innerHTML = `Textile ${i}`
+      div.appendChild(can)
+      div.style.border = '2px solid red'
+      div.style.textAlign = 'center'
+      div.style.margin = '5px'
+      div.style.display = 'inline-block'
+      document.body.prepend(div)
     }
   }
 }

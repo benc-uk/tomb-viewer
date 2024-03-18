@@ -68,6 +68,7 @@ export function parseLevel(data: DataView): tr.level {
     room.roomData.numVertices = data.getUint16(offset, true)
     offset += 2
     for (let j = 0; j < room.roomData.numVertices; j++) {
+      // Slightly different vertex struct in TR3 which has colours
       const room_vertex = tr.ParseRoomVertexTR3(data, offset)
       room.roomData.vertices.push(room_vertex)
       offset += tr.room_vertex_size_tr2 // Note length of vertex struct is larger in TR2 & TR3

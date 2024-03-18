@@ -115,6 +115,8 @@ export enum version {
 
 export type version_string = 'Tomb Raider 1' | 'Tomb Raider 2' | 'Tomb Raider 3'
 
+export type tuple = [number, number, number]
+
 // =============================================================================
 // The core and main level struct
 // This is a unified set of data that represents any TR 1-3 level
@@ -167,8 +169,6 @@ export type level = {
 // =============================================================================
 // Colours
 // =============================================================================
-
-const FIVEBIT_TO_EIGHTBIT = 255 / 31
 
 export type colour = {
   r: uint8_t
@@ -228,13 +228,17 @@ export function ParsePalette16(data: DataView, offset: number): colour4[] {
   return palette
 }
 
-/** Convert 15 bit colour to a RGB tuple */
-export function colour15ToRGB(colour: uint16_t): number[] {
-  const red = (colour & 0x7c00) >> 10
-  const green = (colour & 0x3e0) >> 5
-  const blue = colour & 0x1f
+/** Convert 15 bit colour to a 0-1 RGB tuple */
+export function colour15ToRGB(colour: uint16_t): tuple {
+  let red = (colour & 0x7c00) >> 10
+  let green = (colour & 0x3e0) >> 5
+  let blue = colour & 0x1f
 
-  return [Math.floor(red * FIVEBIT_TO_EIGHTBIT), Math.floor(green * FIVEBIT_TO_EIGHTBIT), Math.floor(blue * FIVEBIT_TO_EIGHTBIT)]
+  red = Math.min(1, Math.max(0, red / 31))
+  green = Math.min(1, Math.max(0, green / 31))
+  blue = Math.min(1, Math.max(0, blue / 31))
+
+  return [red, green, blue]
 }
 
 // =============================================================================
