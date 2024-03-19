@@ -118,8 +118,8 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
         textures.push(tex!)
       } catch (e) {
-        console.error(`💥 Error: Snipping animated texture failed, ${e}`)
-        console.error(`💥 Error: ${u1},${v1} ${u2},`)
+        // console.error(`💥 Error: Snipping animated texture failed, ${e}`)
+        // console.error(`💥 Error: ${u1},${v1} ${u2},`)
       }
     }
 
@@ -187,8 +187,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       if (!objTexture) {
         console.error(`💥 Error: Missing rect texture ${rect.texture} in room ${roomNum}`)
         continue
-      }
-      if (objTexture.attribute == 2) {
       }
 
       // First 14 bits (little endian) of tileAndFlag is the index into the textile array
@@ -314,6 +312,13 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         // We need to push light data for each vertex
         // AND we need to have data for both triangles in the rectangle, so 6 vertexes
         part.extraAttributes?.colour?.data.push(...v1Col, ...v4Col, ...v3Col, ...v1Col, ...v3Col, ...v2Col)
+
+        // Added in TR3, the 15th bit means double-sided
+        const isDoubleSided = rect.texture & 0x8000 ? true : false
+        if (isDoubleSided) {
+          part.addQuad(v1, v2, v3, v4, [texU1, texV1], [texU2, texV2], [texU3, texV3], [texU4, texV4])
+          part.extraAttributes?.colour?.data.push(...v1Col, ...v4Col, ...v3Col, ...v1Col, ...v3Col, ...v2Col)
+        }
       }
     }
 
@@ -364,6 +369,13 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
         part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
         // We need to push light data for each vertex
         part.extraAttributes?.colour?.data.push(...v1Col, ...v3Col, ...v2Col)
+
+        const isDoubleSided = tri.texture & 0x8000 ? true : false
+        if (isDoubleSided) {
+          // Reverse the triangle to make it double-sided
+          part.addTriangle(v1, v2, v3, [texU1, texV1], [texU2, texV2], [texU3, texV3])
+          part.extraAttributes?.colour?.data.push(...v1Col, ...v2Col, ...v3Col)
+        }
       }
     }
 
