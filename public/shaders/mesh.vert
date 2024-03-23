@@ -45,11 +45,11 @@ void main() {
   v_light = u_mat.ambient;
 
   vec3 N = normalize((u_worldInverseTranspose * vec4(normal, 0)).xyz);
-  vec4 vertposition = u_world * position;
+  vec4 worldpos = u_world * position;
 
   // Basic distance lambert shading not attenuated
   for(int i = 0; i < u_numLights; i++) {
-    vec3 L = normalize(u_lights[i].pos - vertposition.xyz);
+    vec3 L = normalize(u_lights[i].pos - worldpos.xyz);
     float lambertTerm = dot(N, L);
     lambertTerm = max(lambertTerm, 0.0);
     v_light += lambertTerm * (u_lights[i].intensity / float(u_numLights));

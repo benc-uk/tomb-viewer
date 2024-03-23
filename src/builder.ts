@@ -28,7 +28,19 @@ type AnimatedTexture = {
   textures: WebGLTexture[]
 }
 
-export async function buildWorld(config: AppConfig, ctx: Context, levelName: string) {
+var ctx: Context
+let config: AppConfig
+
+// Global data structures for the world
+let spriteMaterials = new Map<number, Material>()
+let tileBuffers = new Array<Uint8Array>()
+let materials = new Array<Material>()
+
+export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName: string) {
+  // Store the config and context for later
+  config = configIn
+  ctx = ctxIn
+
   ctx.removeAllInstances()
 
   const data = await getLevelFile(levelName)
@@ -46,9 +58,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
   console.log(`✨ Level data parsing complete, building world...`)
 
   // Create all materials one for each tex-tile
-  const materials = new Array<Material>()
-  const spriteMaterials = new Array<Material>()
-  const tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
+  materials = new Array<Material>()
+  tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
+  spriteMaterials = new Map<number, Material>()
+
   // For our own light system, we need to keep track of the lights in each room
   const roomLights = new Map<number, SimpleLight[]>()
   // Animated textures require special handling
@@ -69,19 +82,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       materials.push(mat)
       tileBuffers.push(buffer)
     }
-  }
-
-  // Create all sprite materials
-  for (const sprite of level.spriteTextures) {
-    const w = Math.round(sprite.width / 256)
-    const h = Math.round(sprite.height / 256)
-
-    // Snip the sprite section, from the larger textile image texture
-    const buffer = getRegionFromBuffer(tileBuffers[sprite.tile], sprite.x, sprite.y, w, h, 256)
-    const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
-    mat.alphaCutoff = 0.7
-
-    spriteMaterials.push(mat)
   }
 
   // Create all animated texture materials
@@ -131,11 +131,6 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       textures,
       objTexIds: animTex.objTexIds,
     })
-  }
-
-  // Create all GSOTS models for meshes
-  for (const [meshId, mesh] of level.meshes) {
-    buildMesh(mesh, meshId, level, ctx, materials)
   }
 
   // Nodes to hold the rooms + sprites, static meshes
@@ -393,10 +388,39 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       roomNode.metadata.centerY = center[1]
       roomNode.metadata.centerZ = center[2] - roomZ
 
+      // Add room lights, we bypass the GSOTS light system and use our own!
+      const roomLightArray = []
+      let lightCount = 0
+      for (const light of room.lights) {
+        const intensity = light.intensity / 0x1fff
+        let intensityRGB = [intensity, intensity, intensity]
+
+        if (light.colour) {
+          intensityRGB = [light.colour.r / 255, light.colour.g / 255, light.colour.b / 255]
+        }
+
+        // Add to the room light data array
+        roomLightArray.push({
+          pos: [light.x, -light.y, -light.z],
+          intensity: intensityRGB,
+          maxDist: light.fade,
+        } as SimpleLight)
+
+        roomLights.set(roomNum, roomLightArray)
+        if (++lightCount >= MAX_LIGHTS) {
+          break
+        }
+      }
+
       // Water rooms are blue/green, use uniformOverrides to do this
-      roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: false }
+      roomInstance.uniformOverrides = {
+        u_time: Stats.totalTime,
+        u_water: false,
+        u_lights: roomLights.get(roomNum) ?? [],
+        u_numLights: roomLights.get(roomNum)?.length ?? 0,
+      }
       if (isWaterRoom(room)) {
-        roomInstance.uniformOverrides = { u_time: Stats.totalTime, u_water: true }
+        roomInstance.uniformOverrides = { ...roomInstance.uniformOverrides, u_time: Stats.totalTime, u_water: true }
       }
       roomNode.addChild(roomInstance)
 
@@ -408,35 +432,11 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       console.error(e)
     }
 
-    // Add room lights, we bypass the GSOTS light system and use our own!
-    const roomLightArray = []
-    let lightCount = 0
-    for (const light of room.lights) {
-      const intensity = light.intensity / 0x1fff
-      let intensityRGB = [intensity, intensity, intensity]
-
-      if (light.colour) {
-        intensityRGB = [light.colour.r / 255, light.colour.g / 255, light.colour.b / 255]
-      }
-
-      // Add to the room light data array
-      roomLightArray.push({
-        pos: [light.x, -light.y, -light.z],
-        intensity: intensityRGB,
-        maxDist: light.fade,
-      } as SimpleLight)
-
-      roomLights.set(roomNum, roomLightArray)
-      if (++lightCount >= MAX_LIGHTS) {
-        break
-      }
-    }
-
     // Static scenic sprites, these are only really used in TR1 and only in a few levels
     for (const roomSprite of room.roomData.sprites) {
       // World position of the sprite
       const vert = trVertToXZY(room.roomData.vertices[roomSprite.vertex].vertex)
-      const spriteInst = createSpriteInst(vert, roomSprite.texture, level.spriteTextures, spriteMaterials, ctx)
+      const spriteInst = createSpriteInst(vert, roomSprite.texture, level)
       const bright = room.ambientIntensity / 11000
       spriteInst.uniformOverrides = { 'u_mat.emissive': [bright, bright, bright] }
       fixVines(spriteInst, levelName, roomSprite.texture)
@@ -454,6 +454,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
 
       // Now hop to the mesh via the meshPointers and the staticMesh.mesh index
       const meshPointer = level.meshPointers[staticMesh.mesh]
+      buildMesh(level.meshes.get(meshPointer)!, meshPointer, level)
       const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
       meshInst.customProgramName = CUST_PROG_MESH
 
@@ -505,7 +506,7 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       // The sprite ID is the type of the entity, except when it's not!
       const spriteId = pickupSpriteLookup[level.version]?.get(entity.type) || 0
 
-      const spriteInst = createSpriteInst(entityPos, spriteId, level.spriteTextures, spriteMaterials, ctx)
+      const spriteInst = createSpriteInst(entityPos, spriteId, level)
       spriteInst.scale = [spriteInst.scale[0] * 1.5, spriteInst.scale[1] * 1.5, spriteInst.scale[2] * 1.5]
       roomNodes.get(entity.room)?.addChild(spriteInst)
       continue
@@ -532,7 +533,10 @@ export async function buildWorld(config: AppConfig, ctx: Context, levelName: str
       continue
     }
 
-    const meshInst = ctx.createModelInstance(`mesh_${level.meshPointers[model.startingMesh]}`)
+    const meshPointer = level.meshPointers[model.startingMesh]
+    buildMesh(level.meshes.get(meshPointer)!, meshPointer, level)
+    const meshInst = ctx.createModelInstance(`mesh_${meshPointer}`)
+
     // Intensity1: If not -1, it is a value of constant lighting. -1 means “use mesh lighting”.
     let bright = 1 - entity.intensity / 0x1fff
     if (entity.intensity === -1) {
@@ -652,8 +656,8 @@ function lightAdjust(val: number) {
 /**
  * Internal function for creating a sprite instance
  */
-function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: sprite_texture[], spriteMaterials: Material[], ctx: Context): Instance {
-  const spriteTex = spriteTextures[spriteId]
+function createSpriteInst(vert: XYZ, spriteId: number, level: level): Instance {
+  const spriteTex = level.spriteTextures[spriteId]
   const spriteWorldW = Math.abs(spriteTex.rightSide - spriteTex.leftSide)
   const spriteWorldH = Math.abs(spriteTex.topSide - spriteTex.bottomSide)
   const aspect = spriteWorldH / spriteWorldW
@@ -663,17 +667,37 @@ function createSpriteInst(vert: XYZ, spriteId: number, spriteTextures: sprite_te
     size = spriteWorldW
   }
 
-  const spriteInst = ctx.createBillboardInstance(spriteMaterials[spriteId], size)
-  spriteInst.scale = [1, aspect, 1]
-  spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
+  // Snip the sprite texture from the textile and create a material for it
+  if (!spriteMaterials.has(spriteId)) {
+    console.log(`🎨 Creating sprite material for sprite ${spriteId}`)
 
-  return spriteInst
+    const w = Math.round(spriteTex.width / 256)
+    const h = Math.round(spriteTex.height / 256)
+
+    // Snip the sprite section, from the larger textile image texture
+    const buffer = getRegionFromBuffer(tileBuffers[spriteTex.tile], spriteTex.x, spriteTex.y, w, h, 256)
+    const mat = Material.createBasicTexture(buffer, config.textureFilter, false, { width: w, height: h, wrap: 0x812f })
+    mat.alphaCutoff = 0.7
+
+    spriteMaterials.set(spriteId, mat)
+  }
+
+  const spriteMat = spriteMaterials.get(spriteId)
+  if (spriteMat) {
+    const spriteInst = ctx.createBillboardInstance(spriteMat, size)
+    spriteInst.scale = [1, aspect, 1]
+    spriteInst.position = [vert[0], vert[1], vert[2]] as XYZ
+
+    return spriteInst
+  }
+
+  throw new Error('Error finding sprite texture')
 }
 
 /**
  * Internal function for creating a GSOTS model from a TR mesh
  */
-function buildMesh(mesh: mesh, meshId: number, level: level, ctx: Context, materials: Material[]) {
+function buildMesh(mesh: mesh, meshId: number, level: level) {
   const builder = new ModelBuilder()
   const parts: Map<number, BuilderPart> = new Map()
 
