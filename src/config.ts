@@ -3,27 +3,17 @@
 // Configuration for the app
 // =============================================================================
 
-import { XYZ } from 'gsots3d'
 import JSON5 from 'json5'
 
 export type AppConfig = {
   width: number
   aspectRatio: number
 
-  gamma: number
-  ambient: number
-
   textureFilter: boolean
 
   drawDistance: number
   fov: number
   speed: number
-
-  startPos?: XYZ
-
-  lightConst: number
-  lightQuad: number
-  lightBright: number
 
   distanceThreshold: number
 }

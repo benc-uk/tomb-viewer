@@ -146,7 +146,6 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
   // Core loop - build all room geometry
   for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
-    // for (let roomNum = 7; roomNum < 8; roomNum++) {
     const room = level.rooms[roomNum]
     const roomX = room.info.x
     const roomZ = room.info.z
@@ -161,20 +160,6 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
     }
 
     const builder = new ModelBuilder()
-
-    // Add a part to the room, one for each textile
-    // This is part of the trick to get the right texture on the right part
-    for (let i = 0; i < materials.length; i++) {
-      const part = builder.newPart('roompart_' + i, materials[i])
-      part.extraAttributes = {
-        colour: { numComponents: 3, data: [] },
-      }
-
-      const part2 = builder.newPart('roompart_blend_' + i, materialsBlend[i])
-      part2.extraAttributes = {
-        colour: { numComponents: 3, data: [] },
-      }
-    }
 
     // All room rectangles
     for (const rect of room.roomData.rectangles) {
@@ -288,6 +273,12 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       }
 
       // This trick gets the rectangle added to the right part with the matching textile
+      if (!builder.parts.has('roompart_' + texTileIndex)) {
+        const newPart = builder.newPart('roompart_' + texTileIndex, materials[texTileIndex])
+        newPart.extraAttributes = {
+          colour: { numComponents: 3, data: [] },
+        }
+      }
       let part = builder.parts.get('roompart_' + texTileIndex)
 
       // Special check for animated textures
@@ -324,7 +315,6 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
         // Added in TR3, the 15th bit means double-sided
         const isDoubleSided = rect.texture & 0x8000 ? true : false
-        // isDoubleSided = isWaterRoom(room)
         if (isDoubleSided) {
           part.addQuad(v1, v2, v3, v4, [texU1, texV1], [texU2, texV2], [texU3, texV3], [texU4, texV4])
           part.extraAttributes?.colour?.data.push(...v1Col, ...v4Col, ...v3Col, ...v1Col, ...v3Col, ...v2Col)
@@ -372,6 +362,14 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         v1Col = [v1L, v1L, v1L]
         v2Col = [v2L, v2L, v2L]
         v3Col = [v3L, v3L, v3L]
+      }
+
+      // This trick gets the triangle added to the right part with the matching textile
+      if (!builder.parts.has('roompart_' + texTileIndex)) {
+        const newPart = builder.newPart('roompart_' + texTileIndex, materials[texTileIndex])
+        newPart.extraAttributes = {
+          colour: { numComponents: 3, data: [] },
+        }
       }
 
       const part = builder.parts.get('roompart_' + texTileIndex)
@@ -436,7 +434,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
       // Water rooms are blue/green, use uniformOverrides to do this
       roomInstance.uniformOverrides = {
-        u_time: Stats.totalTime,
+        u_time: Stats.totalTime ?? 0,
         u_water: false,
         u_lights: roomLights.get(roomNum) ?? [],
         u_numLights: roomLights.get(roomNum)?.length ?? 0,
@@ -608,6 +606,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
   // Allow the config to override the start position
   ctx.camera.position = config.startPos ?? ctx.camera.position
 
+  // Custom key handler
   window.addEventListener('keydown', (e) => {
     if (e.key === '1') {
       // Find all the the alternate rooms and flip visibility
@@ -624,6 +623,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
     }
   })
 
+  // All stuff that needs to be updated every frame happens here
   ctx.update = () => {
     if (Stats.frameCount % 4 === 0) {
       // Find the rooms closest to the camera
@@ -657,12 +657,10 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
       // Update animated textures
       // FIXME: Animated textures are not working in TR3 AT ALL!
-      // if (level.version != version.TR3) {
       for (const animTex of animTextures) {
         const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
         animTex.material.diffuseTex = animTex.textures[frame]
       }
-      // }
     }
   }
 }
