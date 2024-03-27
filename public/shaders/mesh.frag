@@ -8,7 +8,7 @@ precision highp float;
 
 // Inputs from vertex shader
 in vec2 v_texCoord;
-in float v_light;
+in vec3 v_light;
 
 struct Material {
   vec3 ambient;
@@ -30,7 +30,7 @@ void main() {
     discard;
   }
 
-  vec3 diffuseCol = vec3(texel) * v_light;
+  vec3 diffuseCol = texel.rgb * v_light;
   
   outColour = vec4(diffuseCol.rgb, 1.0) ;
 }

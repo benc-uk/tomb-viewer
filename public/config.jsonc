@@ -1,9 +1,9 @@
 {
   // Camera settings
-  "drawDistance": 50000,
+  "drawDistance": 30000,
   "fov": 60,
   "speed": 120,
 
   // Used to cull rooms that are too far away
-  "distanceThreshold": 50000,
+  "distanceThreshold": 40000,
 }

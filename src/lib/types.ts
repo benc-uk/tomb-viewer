@@ -108,12 +108,14 @@ export function ParseBoundingBox(data: DataView, offset: number): bounding_box {
 export enum version {
   TR1 = 0x00000020,
   TR2 = 0x0000002d,
-  TR3 = 0xff080038,
+  TR3 = 0xff180038,
   TR4 = 0x00345254,
   TR5 = 0x00345254,
 }
 
 export type version_string = 'Tomb Raider 1' | 'Tomb Raider 2' | 'Tomb Raider 3'
+
+export type tuple = [number, number, number]
 
 // =============================================================================
 // The core and main level struct
@@ -224,6 +226,21 @@ export function ParsePalette16(data: DataView, offset: number): colour4[] {
   }
 
   return palette
+}
+
+/** Convert 15 bit colour to a 0-1 RGB tuple */
+export function colour15ToRGB(colour?: uint16_t): tuple {
+  if (!colour) return [0, 0, 0]
+
+  let red = (colour & 0x7c00) >> 10
+  let green = (colour & 0x3e0) >> 5
+  let blue = colour & 0x1f
+
+  red = Math.min(1, Math.max(0, red / 31))
+  green = Math.min(1, Math.max(0, green / 31))
+  blue = Math.min(1, Math.max(0, blue / 31))
+
+  return [red, green, blue]
 }
 
 // =============================================================================
@@ -363,22 +380,31 @@ export function NewRoomData(): room_data {
 export type room_vertex = {
   vertex: vertex
   lighting: int16_t
+  colour?: int16_t // Only present in TR3
 }
 
 export const room_vertex_size = 8
 export const room_vertex_size_tr2 = 12
 
+/**
+ * Parses both TR1 & TR2 room vertexes, the extra parts in tr2_room_vertex are ignored
+ */
 export function ParseRoomVertex(data: DataView, offset: number): room_vertex {
   return {
     vertex: ParseVertex(data, offset),
     lighting: data.getInt16(offset + 6, true),
+    // In TR2 Attributes and Lighting2 are here but we don't use them
   } as room_vertex
 }
 
-export function ParseRoomVertexTR2(data: DataView, offset: number): room_vertex {
+/**
+ * Only used by TR3
+ */
+export function ParseRoomVertexTR3(data: DataView, offset: number): room_vertex {
   return {
     vertex: ParseVertex(data, offset),
-    lighting: data.getInt16(offset + 10, true),
+    lighting: data.getInt16(offset + 6, true),
+    colour: data.getInt16(offset + 10, true),
   } as room_vertex
 }
 
@@ -396,8 +422,8 @@ export function ParseRoomSprite(data: DataView, offset: number): room_sprite {
   } as room_sprite
 }
 
-export function isWaterRoom(room: room) {
-  return room.flags & 0x1
+export function isWaterRoom(room: room): boolean {
+  return (room.flags & 0x1) === 1
 }
 
 export type room_staticmesh = {
@@ -429,6 +455,7 @@ export function ParseRoomStaticMeshTR2(data: DataView, offset: number): room_sta
     y: data.getInt32(offset + 4, true),
     z: data.getInt32(offset + 8, true),
     rotation: data.getUint16(offset + 12, true),
+    // Note in TR3 we treat intensity as 15 bit RGB color, but we parse it the same
     intensity: data.getUint16(offset + 14, true),
     // Skip intensity2 uint16_t isn't used anyhow!
     meshId: data.getUint16(offset + 18, true),
@@ -601,6 +628,7 @@ export type room_light = {
   z: int32_t
   intensity: uint16_t
   fade: uint32_t
+  colour?: colour // Only in TR3
 }
 
 export const room_light_size = 18
@@ -625,6 +653,26 @@ export function ParseRoomLightTR2(data: DataView, offset: number): room_light {
     // Skip intensity2 uint16_t was never used in real game
     fade: data.getUint32(offset + 16, true),
     // Skip fade2 uint32_t was never used in real game
+  } as room_light
+}
+
+export function ParseRoomLightTR3(data: DataView, offset: number): room_light | undefined {
+  // TR3 introduced two light types, we only use type 0 which is point
+  // Note the TRosettaStone3 documentation is wrong about the light types!
+  const type = data.getUint8(offset + 15)
+
+  // These are directional sun lights, we ignore them
+  if (type === 1) {
+    return undefined
+  }
+
+  return {
+    x: data.getInt32(offset, true),
+    y: data.getInt32(offset + 4, true),
+    z: data.getInt32(offset + 8, true),
+    colour: ParseColour(data, offset + 12),
+    intensity: data.getInt32(offset + 16, true),
+    fade: data.getInt32(offset + 20, true),
   } as room_light
 }
 
