@@ -422,8 +422,8 @@ export function ParseRoomSprite(data: DataView, offset: number): room_sprite {
   } as room_sprite
 }
 
-export function isWaterRoom(room: room) {
-  return room.flags & 0x1
+export function isWaterRoom(room: room): boolean {
+  return (room.flags & 0x1) === 1
 }
 
 export type room_staticmesh = {

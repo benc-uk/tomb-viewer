@@ -47,15 +47,25 @@ void main() {
   vec3 N = normalize((u_worldInverseTranspose * vec4(normal, 0)).xyz);
   vec4 worldpos = u_world * position;
 
-  // Basic distance lambert shading not attenuated
+  // Basic lambert shading with attenuation
   for(int i = 0; i < u_numLights; i++) {
-    vec3 L = normalize(u_lights[i].pos - worldpos.xyz);
-    float lambertTerm = dot(N, L);
-    lambertTerm = max(lambertTerm, 0.0);
-    v_light += lambertTerm * (u_lights[i].intensity / float(u_numLights));
+    Light light = u_lights[i];
+    vec3 L = normalize(light.pos - worldpos.xyz);
+    float diffuse = dot(N, L);
+    diffuse = max(diffuse, 0.0);
+    
+    float dist = length(light.pos - worldpos.xyz);
+    
+    if (dist > light.maxDist) {
+      diffuse = 0.0;
+    }
+
+    v_light += diffuse * light.intensity;
   }
 
-  v_light = clamp(v_light, 0.0, 1.0);
+  if(u_mat.emissive.x > 0.0) {
+    v_light = u_mat.emissive;
+  }
 
   gl_Position = u_worldViewProjection * position;
 }

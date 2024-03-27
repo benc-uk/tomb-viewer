@@ -44,15 +44,13 @@ void main() {
     v_colour = v_colour * (0.8 + wave) + 0.2;
   }
 
-  // // Basic distance lambert shading not attenuated
+  // Use point lights to also shade room vertices
+  // REMOVED FOR NOW
   // for(int i = 0; i < u_numLights; i++) {
-  //   float dist = length(u_lights[i].pos - worldpos.xyz);
-
-  //   float ammount = 1.0 / dist * dist;
-  //   // scale down by number of lights
-  //   ammount /= float(u_numLights)+1.0;
-  //   ammount = clamp(ammount, 0.0, 1.0);
-  //   v_colour += ammount * u_lights[i].intensity *2.0;
+  //   Light light = u_lights[i];
+  //   float dist = length(light.pos - worldpos.xyz);
+  //   float intensity = 1.0 - clamp(dist / light.maxDist, 0.0, 1.0);
+  //   v_colour += vec3(1.0, 1.0, 1.0) * intensity;
   // }
 
   gl_Position = u_worldViewProjection * position;

@@ -11,7 +11,7 @@ import { textile16, textile8, textile8_size, textile16_size, colour, level, vers
  * @param tex The textile to convert
  * @param palette The palette to use
  */
-export function textile8ToBuffer(tex: textile8, palette: colour[]) {
+export function textile8ToBuffer(tex: textile8, palette: colour[]): Uint8Array {
   const buffer = new ArrayBuffer(256 * 256 * 4)
   const imgData = new Uint8Array(buffer)
 
@@ -47,7 +47,7 @@ export function textile8ToBuffer(tex: textile8, palette: colour[]) {
  * @param tex The textile16 to convert
  * @param palette16 The palette16 to use
  */
-export function textile16ToBuffer(tex: textile16) {
+export function textile16ToBuffer(tex: textile16): Uint8Array {
   const buffer = new ArrayBuffer(256 * 256 * 4)
   const imgData = new Uint8Array(buffer)
 

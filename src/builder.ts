@@ -3,9 +3,9 @@
 // Builds the 3D world from a Tomb Raider level file
 // =============================================================================
 
-import { BuilderPart, Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model, RGB } from 'gsots3d'
+import { Context, Instance, Material, ModelBuilder, Stats, TextureCache, XYZ, Node, Model, RGB } from 'gsots3d'
 
-import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, sprite_texture, ufixed16ToFloat, level, colour15ToRGB, version, tuple } from './lib/types'
+import { entityAngleToDeg, isWaterRoom, trVertToXZY, mesh, ufixed16ToFloat, level, colour15ToRGB, version, tuple } from './lib/types'
 import { entityEffects, fixVines, pickupSpriteLookup } from './lib/versions'
 import { getRegionFromBuffer, textile16ToBuffer, textile8ToBuffer } from './lib/textures'
 import { isEntityInCategory } from './lib/entity'
@@ -28,13 +28,14 @@ type AnimatedTexture = {
   textures: WebGLTexture[]
 }
 
-var ctx: Context
+let ctx: Context
 let config: AppConfig
 
 // Global data structures for the world
 let spriteMaterials = new Map<number, Material>()
 let tileBuffers = new Array<Uint8Array>()
 let materials = new Array<Material>()
+let materialsBlend = new Array<Material>()
 
 export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName: string) {
   // Store the config and context for later
@@ -59,6 +60,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
   // Create all materials one for each tex-tile
   materials = new Array<Material>()
+  materialsBlend = new Array<Material>()
   tileBuffers = new Array<Uint8Array>() // We keep buffer versions too, for turning into sprites
   spriteMaterials = new Map<number, Material>()
 
@@ -80,6 +82,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       const buffer = textile16ToBuffer(textile)
       const mat = Material.createBasicTexture(buffer, config.textureFilter, false)
       materials.push(mat)
+
+      const matBlend = Material.createBasicTexture(buffer, true, false)
+      matBlend.additiveBlend = true
+      materialsBlend.push(matBlend)
+
       tileBuffers.push(buffer)
     }
   }
@@ -101,11 +108,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       const u1 = ufixed16ToFloat(objTex.vertices[0].x)
       const v1 = ufixed16ToFloat(objTex.vertices[0].y)
       const u2 = ufixed16ToFloat(objTex.vertices[1].x)
-      const v2 = ufixed16ToFloat(objTex.vertices[1].y)
-      const u3 = ufixed16ToFloat(objTex.vertices[2].x)
+      //const v2 = ufixed16ToFloat(objTex.vertices[1].y)
+      //const u3 = ufixed16ToFloat(objTex.vertices[2].x)
       const v3 = ufixed16ToFloat(objTex.vertices[2].y)
-      const u4 = ufixed16ToFloat(objTex.vertices[3].x)
-      const v4 = ufixed16ToFloat(objTex.vertices[3].y)
+      //const u4 = ufixed16ToFloat(objTex.vertices[3].x)
+      //const v4 = ufixed16ToFloat(objTex.vertices[3].y)
 
       const x = Math.round(u1)
       const y = Math.round(v1)
@@ -119,7 +126,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         textures.push(tex!)
       } catch (e) {
         // console.error(`💥 Error: Snipping animated texture failed, ${e}`)
-        // console.error(`💥 Error: ${u1},${v1} ${u2},`)
+        // console.error(`💥 Error: ${u1},${v1} ${u2},${v2} ${u3},${v3} ${u4},${v4}`)
       }
     }
 
@@ -139,6 +146,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
   // Core loop - build all room geometry
   for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
+    // for (let roomNum = 7; roomNum < 8; roomNum++) {
     const room = level.rooms[roomNum]
     const roomX = room.info.x
     const roomZ = room.info.z
@@ -161,6 +169,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       part.extraAttributes = {
         colour: { numComponents: 3, data: [] },
       }
+
+      const part2 = builder.newPart('roompart_blend_' + i, materialsBlend[i])
+      part2.extraAttributes = {
+        colour: { numComponents: 3, data: [] },
+      }
     }
 
     // All room rectangles
@@ -178,11 +191,14 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       // Texture coordinates are in the bizarrely named objectTextures
 
       // TR3 added dual-sided textures with a bit in 15, so we only use the first 14 bits
-      let objTexture = level.objectTextures[rect.texture & 0x3fff]
+      const objTexture = level.objectTextures[rect.texture & 0x3fff]
       if (!objTexture) {
         console.error(`💥 Error: Missing rect texture ${rect.texture} in room ${roomNum}`)
         continue
       }
+
+      // TR3 Only
+      // const additiveBlend = objTexture.attribute === 2 ? true : false
 
       // First 14 bits (little endian) of tileAndFlag is the index into the textile array
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
@@ -204,55 +220,53 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       const uvCenterY = (texV1 + texV2 + texV3 + texV4) / 4
 
       // Mad hack to fix texture bleeding
-      if (true) {
-        if (texU1 > uvCenterX) {
-          texU1 -= uvPadding
-        }
-        if (texU1 < uvCenterX) {
-          texU1 += uvPadding
-        }
-        if (texU2 > uvCenterX) {
-          texU2 -= uvPadding
-        }
-        if (texU2 < uvCenterX) {
-          texU2 += uvPadding
-        }
-        if (texU3 > uvCenterX) {
-          texU3 -= uvPadding
-        }
-        if (texU3 < uvCenterX) {
-          texU3 += uvPadding
-        }
-        if (texU4 > uvCenterX) {
-          texU4 -= uvPadding
-        }
-        if (texU4 < uvCenterX) {
-          texU4 += uvPadding
-        }
-        if (texV1 > uvCenterY) {
-          texV1 -= uvPadding
-        }
-        if (texV1 < uvCenterY) {
-          texV1 += uvPadding
-        }
-        if (texV2 > uvCenterY) {
-          texV2 -= uvPadding
-        }
-        if (texV2 < uvCenterY) {
-          texV2 += uvPadding
-        }
-        if (texV3 > uvCenterY) {
-          texV3 -= uvPadding
-        }
-        if (texV3 < uvCenterY) {
-          texV3 += uvPadding
-        }
-        if (texV4 > uvCenterY) {
-          texV4 -= uvPadding
-        }
-        if (texV4 < uvCenterY) {
-          texV4 += uvPadding
-        }
+      if (texU1 > uvCenterX) {
+        texU1 -= uvPadding
+      }
+      if (texU1 < uvCenterX) {
+        texU1 += uvPadding
+      }
+      if (texU2 > uvCenterX) {
+        texU2 -= uvPadding
+      }
+      if (texU2 < uvCenterX) {
+        texU2 += uvPadding
+      }
+      if (texU3 > uvCenterX) {
+        texU3 -= uvPadding
+      }
+      if (texU3 < uvCenterX) {
+        texU3 += uvPadding
+      }
+      if (texU4 > uvCenterX) {
+        texU4 -= uvPadding
+      }
+      if (texU4 < uvCenterX) {
+        texU4 += uvPadding
+      }
+      if (texV1 > uvCenterY) {
+        texV1 -= uvPadding
+      }
+      if (texV1 < uvCenterY) {
+        texV1 += uvPadding
+      }
+      if (texV2 > uvCenterY) {
+        texV2 -= uvPadding
+      }
+      if (texV2 < uvCenterY) {
+        texV2 += uvPadding
+      }
+      if (texV3 > uvCenterY) {
+        texV3 -= uvPadding
+      }
+      if (texV3 < uvCenterY) {
+        texV3 += uvPadding
+      }
+      if (texV4 > uvCenterY) {
+        texV4 -= uvPadding
+      }
+      if (texV4 < uvCenterY) {
+        texV4 += uvPadding
       }
 
       let v1Col: tuple, v2Col: tuple, v3Col: tuple, v4Col: tuple
@@ -310,6 +324,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
         // Added in TR3, the 15th bit means double-sided
         const isDoubleSided = rect.texture & 0x8000 ? true : false
+        // isDoubleSided = isWaterRoom(room)
         if (isDoubleSided) {
           part.addQuad(v1, v2, v3, v4, [texU1, texV1], [texU2, texV2], [texU3, texV3], [texU4, texV4])
           part.extraAttributes?.colour?.data.push(...v1Col, ...v4Col, ...v3Col, ...v1Col, ...v3Col, ...v2Col)
@@ -337,12 +352,12 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
       // Get the UV of the four corners in objTexture.vertices
-      let texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
-      let texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
-      let texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
-      let texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
-      let texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
-      let texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
+      const texU1 = ufixed16ToFloat(objTexture.vertices[0].x) / 256
+      const texV1 = ufixed16ToFloat(objTexture.vertices[0].y) / 256
+      const texU2 = ufixed16ToFloat(objTexture.vertices[1].x) / 256
+      const texV2 = ufixed16ToFloat(objTexture.vertices[1].y) / 256
+      const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
+      const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
       let v1Col: tuple, v2Col: tuple, v3Col: tuple
       if (level.version === version.TR3) {
@@ -359,13 +374,15 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         v3Col = [v3L, v3L, v3L]
       }
 
-      let part = builder.parts.get('roompart_' + texTileIndex)
+      const part = builder.parts.get('roompart_' + texTileIndex)
+
       if (part) {
         part.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
         // We need to push light data for each vertex
         part.extraAttributes?.colour?.data.push(...v1Col, ...v3Col, ...v2Col)
 
         const isDoubleSided = tri.texture & 0x8000 ? true : false
+        // isDoubleSided = isWaterRoom(room)
         if (isDoubleSided) {
           // Reverse the triangle to make it double-sided
           part.addTriangle(v1, v2, v3, [texU1, texV1], [texU2, texV2], [texU3, texV3])
@@ -373,6 +390,35 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         }
       }
     }
+
+    // Add room lights, we bypass the GSOTS light system and use our own!
+    const roomLightArray = []
+    let lightCount = 0
+    for (const light of room.lights) {
+      // TR1 and TR2 have simple lights, we convert to intensity and greyscale RBG
+      const intensity = Math.max(Math.min(1 - light.intensity / 0x1fff, 1), 0)
+      let intensityRGB = [intensity, intensity, intensity]
+
+      // TR3 has coloured lights! Convert 15-bit colour to RGB
+      if (light.colour) {
+        intensityRGB = [light.colour.r / 255, light.colour.g / 255, light.colour.b / 255]
+      }
+
+      // Add to the room light data array
+      if (light.fade < 20000) {
+        roomLightArray.push({
+          pos: [light.x, -light.y, -light.z],
+          intensity: intensityRGB,
+          maxDist: light.fade,
+        } as SimpleLight)
+      }
+
+      if (++lightCount >= MAX_LIGHTS) {
+        break
+      }
+    }
+
+    roomLights.set(roomNum, roomLightArray)
 
     // Build the room model and add it to the roomNode as a child instance
     try {
@@ -388,30 +434,6 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       roomNode.metadata.centerY = center[1]
       roomNode.metadata.centerZ = center[2] - roomZ
 
-      // Add room lights, we bypass the GSOTS light system and use our own!
-      const roomLightArray = []
-      let lightCount = 0
-      for (const light of room.lights) {
-        const intensity = light.intensity / 0x1fff
-        let intensityRGB = [intensity, intensity, intensity]
-
-        if (light.colour) {
-          intensityRGB = [light.colour.r / 255, light.colour.g / 255, light.colour.b / 255]
-        }
-
-        // Add to the room light data array
-        roomLightArray.push({
-          pos: [light.x, -light.y, -light.z],
-          intensity: intensityRGB,
-          maxDist: light.fade,
-        } as SimpleLight)
-
-        roomLights.set(roomNum, roomLightArray)
-        if (++lightCount >= MAX_LIGHTS) {
-          break
-        }
-      }
-
       // Water rooms are blue/green, use uniformOverrides to do this
       roomInstance.uniformOverrides = {
         u_time: Stats.totalTime,
@@ -419,9 +441,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         u_lights: roomLights.get(roomNum) ?? [],
         u_numLights: roomLights.get(roomNum)?.length ?? 0,
       }
+
       if (isWaterRoom(room)) {
         roomInstance.uniformOverrides = { ...roomInstance.uniformOverrides, u_time: Stats.totalTime, u_water: true }
       }
+
       roomNode.addChild(roomInstance)
 
       if (isWaterRoom(room)) {
@@ -459,7 +483,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       meshInst.customProgramName = CUST_PROG_MESH
 
       // For meshes, we override the lighting and add the room lights
-      let staticIntens = 1 - roomStaticMesh.intensity / 0x1fff
+      const staticIntens = 1 - roomStaticMesh.intensity / 0x1fff
       let meshAmbient = [staticIntens, staticIntens, staticIntens]
       if (level.version === version.TR3) {
         // In TR3 convert intensity as a 15-bit colour to RGB
@@ -633,12 +657,12 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
       // Update animated textures
       // FIXME: Animated textures are not working in TR3 AT ALL!
-      if (level.version != version.TR3) {
-        for (const animTex of animTextures) {
-          const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
-          animTex.material.diffuseTex = animTex.textures[frame]
-        }
+      // if (level.version != version.TR3) {
+      for (const animTex of animTextures) {
+        const frame = Math.floor(Stats.frameCount / 12) % animTex.textures.length
+        animTex.material.diffuseTex = animTex.textures[frame]
       }
+      // }
     }
   }
 }
@@ -669,7 +693,7 @@ function createSpriteInst(vert: XYZ, spriteId: number, level: level): Instance {
 
   // Snip the sprite texture from the textile and create a material for it
   if (!spriteMaterials.has(spriteId)) {
-    console.log(`🎨 Creating sprite material for sprite ${spriteId}`)
+    console.debug(`🎨 Creating sprite material for sprite ${spriteId}`)
 
     const w = Math.round(spriteTex.width / 256)
     const h = Math.round(spriteTex.height / 256)
@@ -699,7 +723,6 @@ function createSpriteInst(vert: XYZ, spriteId: number, level: level): Instance {
  */
 function buildMesh(mesh: mesh, meshId: number, level: level) {
   const builder = new ModelBuilder()
-  const parts: Map<number, BuilderPart> = new Map()
 
   // First pass is creating the parts for each textile contained in the mesh
   for (const rect of mesh.texturedRectangles) {
@@ -710,8 +733,13 @@ function buildMesh(mesh: mesh, meshId: number, level: level) {
     }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
-    if (!parts.get(texTileIndex)) {
-      parts.set(texTileIndex, builder.newPart('part_' + texTileIndex, materials[texTileIndex]))
+    let mat = materials[texTileIndex]
+    if (objTexture.attribute === 2) {
+      mat = materialsBlend[texTileIndex]
+    }
+
+    if (!builder.parts.get('part_' + texTileIndex)) {
+      builder.newPart('part_' + texTileIndex, mat)
     }
   }
 
@@ -723,9 +751,8 @@ function buildMesh(mesh: mesh, meshId: number, level: level) {
     }
     const texTileIndex = objTexture.tileAndFlag & 0x3fff
 
-    if (!parts.get(texTileIndex)) {
-      const part = builder.newPart('part_' + texTileIndex, materials[texTileIndex])
-      parts.set(texTileIndex, part)
+    if (!builder.parts.get('part_' + texTileIndex)) {
+      builder.newPart('part_' + texTileIndex, materials[texTileIndex])
     }
   }
 
@@ -752,7 +779,7 @@ function buildMesh(mesh: mesh, meshId: number, level: level) {
     const texU4 = ufixed16ToFloat(objTexture.vertices[3].x) / 256
     const texV4 = ufixed16ToFloat(objTexture.vertices[3].y) / 256
 
-    const part = parts.get(texTileIndex)
+    const part = builder.parts.get('part_' + texTileIndex)
     part!.addQuad(v1, v4, v3, v2, [texU1, texV1], [texU4, texV4], [texU3, texV3], [texU2, texV2])
   }
 
@@ -776,7 +803,7 @@ function buildMesh(mesh: mesh, meshId: number, level: level) {
     const texU3 = ufixed16ToFloat(objTexture.vertices[2].x) / 256
     const texV3 = ufixed16ToFloat(objTexture.vertices[2].y) / 256
 
-    const part = parts.get(texTileIndex)
+    const part = builder.parts.get('part_' + texTileIndex)
     part!.addTriangle(v1, v3, v2, [texU1, texV1], [texU3, texV3], [texU2, texV2])
   }
 
