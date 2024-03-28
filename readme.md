@@ -18,6 +18,12 @@ Status:
 [![Build](https://github.com/benc-uk/tomb-viewer/actions/workflows/static-build.yml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/static.yml) [![CI](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml/badge.svg)](https://github.com/benc-uk/tomb-viewer/actions/workflows/ci.yaml)
 
 <a href="./screens/tr1-scion.png"><img src="./screens/tr1-scion.png"></a>
+<a href="./screens/tr1-valley.png"><img src="./screens/tr1-valley.png"></a>
+<a href="./screens/tr2-bartoli.png"><img src="./screens/tr2-bartoli.png"></a>
+<a href="./screens/tr2-xian.png"><img src="./screens/tr2-xian.png"></a>
+<a href="./screens/tr3-thames.png"><img src="./screens/tr3-thames.png"></a>
+<a href="./screens/tr3-coast.png"><img src="./screens/tr3-coast.png"></a>
+<a href="./screens/tr3-temple.png"><img src="./screens/tr3-temple.png"></a>
 
 See [screens directory for more](./screens/)
 
@@ -38,10 +44,10 @@ This is deployed to GitHub pages, just be aware it is note mobile friendly at al
 
 Controls:
 
-- Cursors keys or WASD to move
+- Cursor keys or WASD to move
 - Mouse to look around
 - Keys '[' and ']' to move up & down
-- Space bar to switch alt rooms
+- '1' key to switch alt rooms
 - 'H' to show the help
 
 There are some options available by clicking the cog icon in the top right.
