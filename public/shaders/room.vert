@@ -32,11 +32,12 @@ struct Light {
 
 uniform Light u_lights[MAX_LIGHTS];
 uniform int u_numLights;
+uniform float u_globalBrightness;
 
 void main() {
   vec4 worldpos = u_world * position;
   v_texCoord = texcoord;
-  v_colour = colour;
+  v_colour = colour * u_globalBrightness;
 
   // Create fake water caustics effect, modulate with time the vertex light
   if(u_water) {

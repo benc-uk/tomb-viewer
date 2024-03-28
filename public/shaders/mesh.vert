@@ -39,10 +39,11 @@ struct Light {
 
 uniform Light u_lights[MAX_LIGHTS];
 uniform int u_numLights;
+uniform float u_globalBrightness;
 
 void main() {
   v_texCoord = texcoord;
-  v_light = u_mat.ambient;
+  v_light = u_mat.ambient * u_globalBrightness;
 
   vec3 N = normalize((u_worldInverseTranspose * vec4(normal, 0)).xyz);
   vec4 worldpos = u_world * position;
