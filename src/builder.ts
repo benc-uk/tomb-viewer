@@ -36,6 +36,7 @@ let spriteMaterials = new Map<number, Material>()
 let tileBuffers = new Array<Uint8Array>()
 let materials = new Array<Material>()
 let materialsBlend = new Array<Material>()
+let roomNodes = new Map<number, Node>()
 
 export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName: string) {
   // Store the config and context for later
@@ -104,6 +105,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       }
 
       const texTileIndex = objTex.tileAndFlag & 0x3fff
+      const additiveBlend = objTex.attribute === 2
 
       const u1 = ufixed16ToFloat(objTex.vertices[0].x)
       const v1 = ufixed16ToFloat(objTex.vertices[0].y)
@@ -118,10 +120,30 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
       const y = Math.round(v1)
       const width = Math.abs(Math.round(u2 - u1))
       const height = Math.abs(Math.round(v3 - v1))
+      if (width === 0 || height === 0) {
+        continue
+      }
 
       // Snip the section, from the larger textile image texture
       try {
         const buffer = getRegionFromBuffer(tileBuffers[texTileIndex], x, y, width, height, 256)
+
+        if (additiveBlend) {
+          // Additive transparency used in TR3, this is a cheap hack to make it look better
+          // We don't actually do additive transparency, but we make it look less bad
+          for (let i = 0; i < buffer.length; i += 4) {
+            const grey = buffer[i] + buffer[i + 1] + buffer[i + 2] / 3
+            if (grey > 60) {
+              buffer[i + 3] = 255
+            } else {
+              buffer[i] = 0
+              buffer[i + 1] = 0
+              buffer[i + 2] = 0
+              buffer[i + 3] = 0
+            }
+          }
+        }
+
         const tex = TextureCache.instance.getCreate(buffer, config.textureFilter, false, 'anim_text_' + objTexId)
         textures.push(tex!)
       } catch (e) {
@@ -142,7 +164,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
 
   // Nodes to hold the rooms + sprites, static meshes
   // Meta data is used to store alternate room info and state
-  const roomNodes = new Map<number, Node>()
+  roomNodes = new Map<number, Node>()
 
   // Core loop - build all room geometry
   for (let roomNum = 0; roomNum < level.rooms.length; roomNum++) {
@@ -260,6 +282,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         v2Col = colour15ToRGB(rv2.colour)
         v3Col = colour15ToRGB(rv3.colour)
         v4Col = colour15ToRGB(rv4.colour)
+        // use lightAdjust
+        v1Col = [lightAdjust(v1Col[0]), lightAdjust(v1Col[1]), lightAdjust(v1Col[2])]
+        v2Col = [lightAdjust(v2Col[0]), lightAdjust(v2Col[1]), lightAdjust(v2Col[2])]
+        v3Col = [lightAdjust(v3Col[0]), lightAdjust(v3Col[1]), lightAdjust(v3Col[2])]
+        v4Col = [lightAdjust(v4Col[0]), lightAdjust(v4Col[1]), lightAdjust(v4Col[2])]
       } else {
         const v1L = lightAdjust(1 - rv1.lighting / 0x1fff)
         const v2L = lightAdjust(1 - rv2.lighting / 0x1fff)
@@ -354,6 +381,11 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         v1Col = colour15ToRGB(rv1.colour)
         v2Col = colour15ToRGB(rv2.colour)
         v3Col = colour15ToRGB(rv3.colour)
+
+        // use lightAdjust
+        v1Col = [lightAdjust(v1Col[0]), lightAdjust(v1Col[1]), lightAdjust(v1Col[2])]
+        v2Col = [lightAdjust(v2Col[0]), lightAdjust(v2Col[1]), lightAdjust(v2Col[2])]
+        v3Col = [lightAdjust(v3Col[0]), lightAdjust(v3Col[1]), lightAdjust(v3Col[2])]
       } else {
         const v1L = lightAdjust(1 - rv1.lighting / 0x1fff)
         const v2L = lightAdjust(1 - rv2.lighting / 0x1fff)
@@ -438,6 +470,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         u_water: false,
         u_lights: roomLights.get(roomNum) ?? [],
         u_numLights: roomLights.get(roomNum)?.length ?? 0,
+        u_globalBrightness: 1.0,
       }
 
       if (isWaterRoom(room)) {
@@ -493,6 +526,7 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
         'u_mat.ambient': meshAmbient,
         u_lights: roomLights.get(roomNum) ?? [],
         u_numLights: roomLights.get(roomNum)?.length ?? 0,
+        u_globalBrightness: 1.0,
       }
 
       // We move the mesh to the room position with the *inverse* of the room position
@@ -603,9 +637,6 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
     ctx.camera.enableFPControls(0, -0.2, 0.002, config.speed, true)
   }
 
-  // Allow the config to override the start position
-  ctx.camera.position = config.startPos ?? ctx.camera.position
-
   // Custom key handler
   window.addEventListener('keydown', (e) => {
     if (e.key === '1') {
@@ -669,8 +700,8 @@ export async function buildWorld(configIn: AppConfig, ctxIn: Context, levelName:
  * Adjust vertex light values to look better and increase contrast
  */
 function lightAdjust(val: number) {
-  val *= 1.8
-  val = Math.pow(val, 1.2)
+  val *= 1.7
+  val = Math.pow(val, 1.4)
   val = Math.min(1, Math.max(0, val))
   return val
 }
@@ -806,4 +837,20 @@ function buildMesh(mesh: mesh, meshId: number, level: level) {
   }
 
   ctx.buildCustomModel(builder, `mesh_${meshId}`)
+}
+
+/**
+ * Used by the UI to set brightness of everything
+ */
+export function setGlobalBrightness(val: number) {
+  for (const [_, roomNode] of roomNodes) {
+    for (const room of roomNode.children) {
+      if (room instanceof Instance) {
+        const roomInst = room as Instance
+        if (roomInst.uniformOverrides) {
+          roomInst.uniformOverrides.u_globalBrightness = val
+        }
+      }
+    }
+  }
 }

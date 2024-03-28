@@ -3,7 +3,7 @@ import './style.css'
 import Alpine from 'alpinejs'
 import { loadConfig, AppConfig } from './config.js'
 import { Context, Stats } from 'gsots3d'
-import { buildWorld } from './builder.js'
+import { setGlobalBrightness, buildWorld } from './builder.js'
 import { ProgramCache } from 'gsots3d'
 
 let ctx: Context
@@ -61,10 +61,7 @@ Alpine.data('app', () => ({
 
     // Change brightness, requires us to update all lights
     this.$watch('brightness', (v) => {
-      for (const light of ctx.lights) {
-        const i = light.metadata.intensity as number
-        light.colour = [v * i, v * i, v * i]
-      }
+      setGlobalBrightness(v)
     })
 
     this.$watch('fov', (v) => {
@@ -97,7 +94,6 @@ Time:  ${Stats.totalTime.toFixed(2)}`
   // Load a new level, wraps the buildWorld function
   async loadLevel(levelName: string) {
     this.loading = true
-    config.startPos = undefined
     this.levelName = levelName
     window.location.hash = levelName
 
@@ -120,6 +116,8 @@ Time:  ${Stats.totalTime.toFixed(2)}`
       this.firstLoad = false
     }
 
+    setGlobalBrightness(this.brightness)
+
     // Actually OK to call this on every level load
     this.loading = false
     ctx.start()
@@ -127,7 +125,6 @@ Time:  ${Stats.totalTime.toFixed(2)}`
 
   // Change texture filtering, requires a world rebuild
   async texFilter(e: Event) {
-    config.startPos = ctx.camera.position
     config.textureFilter = (e.target as HTMLInputElement).checked
     try {
       this.error = ''
